@@ -8,6 +8,12 @@
     -webkit-user-select: none;
     touch-action: manipulation;
   }
+
+  select, input, textarea, button {
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+    pointer-events: auto !important;
+  }
 }
 
 /* Custom scrollbars */

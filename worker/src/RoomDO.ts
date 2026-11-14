@@ -401,13 +401,19 @@ export class RoomDO extends DurableObject<Env> {
     player: PlayerInternal,
     newSettings: Partial<GameSettings>
   ): Promise<void> {
-    if (!player.isHost) {
-      this.sendError(ws, 'Only the host can adjust game settings.');
-      return;
-    }
     if (this.state.status !== 'lobby') {
       this.sendError(ws, 'Settings can only be changed in the lobby.');
       return;
+    }
+
+    // Auto-promote player to host if no active host exists
+    if (!player.isHost) {
+      const hasOtherConnectedHost = this.state.players.some(
+        (p) => p.isHost && p.connected && p.id !== player.id
+      );
+      if (!hasOtherConnectedHost) {
+        player.isHost = true;
+      }
     }
 
     this.state.settings = {
@@ -415,7 +421,7 @@ export class RoomDO extends DurableObject<Env> {
       ...newSettings,
     };
 
-    this.addLog('Host updated game settings.', 'system');
+    this.addLog(`${player.name} updated game settings.`, 'system');
     await this.saveState();
     this.broadcastSync();
   }

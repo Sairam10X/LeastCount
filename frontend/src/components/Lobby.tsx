@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GameSettings, PlayerPublic } from 'shared';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -11,8 +11,6 @@ import {
   ShieldAlert,
   UserX,
   Users,
-  Wifi,
-  WifiOff,
 } from 'lucide-react';
 
 interface LobbyProps {
@@ -41,6 +39,18 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
+  // Local optimistic state so dropdowns change instantly on click
+  const [localSettings, setLocalSettings] = useState<GameSettings>(settings);
+
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+
+  const handleSettingChange = (partial: Partial<GameSettings>) => {
+    setLocalSettings((prev) => ({ ...prev, ...partial }));
+    onUpdateSettings(partial);
+  };
+
   const shareableUrl = `${window.location.origin}/room/${roomCode}`;
 
   const copyLink = async () => {
@@ -54,7 +64,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   };
 
   const activePlayers = players.filter((p) => !p.isSpectator);
-  const canStart = isHost && activePlayers.length >= 2;
+  const canStart = activePlayers.length >= 2;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
@@ -110,7 +120,7 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="flex items-center space-x-2">
               <Users className="w-5 h-5 text-indigo-400" />
               <h3 className="font-bold text-sm sm:text-base text-white">
-                Joined Players ({activePlayers.length}/{settings.maxPlayers})
+                Joined Players ({activePlayers.length}/{localSettings.maxPlayers})
               </h3>
             </div>
             {activePlayers.length < 2 && (
@@ -176,7 +186,7 @@ export const Lobby: React.FC<LobbyProps> = ({
                 disabled={!canStart}
                 className={`w-full py-3 rounded-xl font-black text-sm sm:text-base flex items-center justify-center space-x-2 shadow-xl transition active:scale-98 ${
                   canStart
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400 animate-pulse'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400 animate-pulse cursor-pointer'
                     : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                 }`}
               >
@@ -184,39 +194,36 @@ export const Lobby: React.FC<LobbyProps> = ({
                 <span>START GAME</span>
               </button>
             ) : (
-              <div className="text-center text-xs text-slate-400 py-2">
-                Waiting for host to start the game...
+              <div className="flex items-center justify-between text-xs text-slate-400 py-2">
+                <span>Waiting for host to start the game...</span>
+                {onClaimHost && (
+                  <button
+                    onClick={onClaimHost}
+                    className="text-amber-400 hover:underline font-bold"
+                  >
+                    Take Host Role
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Host Settings Panel */}
+      {/* RIGHT COLUMN: Settings Panel */}
       <div className="lg:col-span-6 bg-slate-900/90 border border-slate-700/80 rounded-2xl p-5 shadow-xl flex flex-col">
         <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-4">
           <SettingsIcon className="w-5 h-5 text-amber-400" />
           <h3 className="font-bold text-sm sm:text-base text-white">
             Game Rules & Settings
           </h3>
-          {!isHost && onClaimHost ? (
-            <button
-              onClick={onClaimHost}
-              className="ml-auto flex items-center space-x-1 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-amber-500/50 transition active:scale-95"
-              title="Click to take host control in this room"
-            >
-              <Crown className="w-3.5 h-3.5" />
-              <span>Claim Host Control</span>
-            </button>
-          ) : !isHost ? (
-            <span className="text-xs text-slate-400 ml-auto italic">
-              (Host only)
-            </span>
-          ) : null}
+          <span className="text-xs text-emerald-400 ml-auto font-medium">
+            (Live Editable)
+          </span>
         </div>
 
         {/* Warning if single deck and >5 players */}
-        {settings.deckMode === 'single' && activePlayers.length > 5 && (
+        {localSettings.deckMode === 'single' && activePlayers.length > 5 && (
           <div className="mb-4 p-2.5 rounded-lg bg-amber-950/60 border border-amber-500/50 text-amber-300 text-xs flex items-center space-x-2">
             <ShieldAlert className="w-4 h-4 flex-shrink-0" />
             <span>
@@ -227,19 +234,18 @@ export const Lobby: React.FC<LobbyProps> = ({
 
         <div className="space-y-4 flex-1 overflow-y-auto pr-1">
           {/* 1. Max Players */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Max Players</label>
               <p className="text-[11px] text-slate-400">Allowed seated players (2–8)</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.maxPlayers}
-              onChange={(e) => onUpdateSettings({ maxPlayers: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              value={localSettings.maxPlayers}
+              onChange={(e) => handleSettingChange({ maxPlayers: Number(e.target.value) })}
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
               {[2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={n} className="bg-slate-900 text-white py-1">
+                <option key={n} value={n} className="bg-slate-900 text-white py-1.5">
                   {n} Players
                 </option>
               ))}
@@ -247,93 +253,89 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           {/* 2. Deck Mode */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Deck Mode</label>
               <p className="text-[11px] text-slate-400">Single (52) or Double (104)</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.deckMode}
+              value={localSettings.deckMode}
               onChange={(e) =>
-                onUpdateSettings({ deckMode: e.target.value as 'single' | 'double' })
+                handleSettingChange({ deckMode: e.target.value as 'single' | 'double' })
               }
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              <option value="single" className="bg-slate-900 text-white py-1">Single Deck (52)</option>
-              <option value="double" className="bg-slate-900 text-white py-1">Double Deck (104)</option>
+              <option value="single" className="bg-slate-900 text-white py-1.5">Single Deck (52)</option>
+              <option value="double" className="bg-slate-900 text-white py-1.5">Double Deck (104)</option>
             </select>
           </div>
 
           {/* 3. External Jokers */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Printed Jokers</label>
               <p className="text-[11px] text-slate-400">2 jokers per deck (worth 0 pts)</p>
             </div>
             <button
-              disabled={!isHost}
-              onClick={() => onUpdateSettings({ externalJokers: !settings.externalJokers })}
-              className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center ${
-                settings.externalJokers ? 'bg-emerald-600 justify-end' : 'bg-slate-700 justify-start'
-              } disabled:opacity-60`}
+              type="button"
+              onClick={() => handleSettingChange({ externalJokers: !localSettings.externalJokers })}
+              className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
+                localSettings.externalJokers ? 'bg-emerald-600 justify-end' : 'bg-slate-700 justify-start'
+              }`}
             >
               <span className="w-5 h-5 rounded-full bg-white shadow-md block"></span>
             </button>
           </div>
 
           {/* 4. Face Card Values */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Face Card Values</label>
               <p className="text-[11px] text-slate-400">K, Q, J count as 10 or 13, 12, 11</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.faceCardValue}
+              value={localSettings.faceCardValue}
               onChange={(e) =>
-                onUpdateSettings({
+                handleSettingChange({
                   faceCardValue: e.target.value as 'ten' | 'actual',
                 })
               }
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              <option value="ten" className="bg-slate-900 text-white py-1">Standard (all 10 pts)</option>
-              <option value="actual" className="bg-slate-900 text-white py-1">Actual (J=11, Q=12, K=13)</option>
+              <option value="ten" className="bg-slate-900 text-white py-1.5">Standard (all 10 pts)</option>
+              <option value="actual" className="bg-slate-900 text-white py-1.5">Actual (J=11, Q=12, K=13)</option>
             </select>
           </div>
 
           {/* 5. Ace Value */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Ace Value</label>
               <p className="text-[11px] text-slate-400">Count Ace as 1 or 14 pts</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.aceValue}
-              onChange={(e) => onUpdateSettings({ aceValue: Number(e.target.value) as 1 | 14 })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              value={localSettings.aceValue}
+              onChange={(e) => handleSettingChange({ aceValue: Number(e.target.value) as 1 | 14 })}
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              <option value={1} className="bg-slate-900 text-white py-1">1 Point</option>
-              <option value={14} className="bg-slate-900 text-white py-1">14 Points</option>
+              <option value={1} className="bg-slate-900 text-white py-1.5">1 Point</option>
+              <option value={14} className="bg-slate-900 text-white py-1.5">14 Points</option>
             </select>
           </div>
 
           {/* 6. Show / Declare Limit */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Show Limit</label>
               <p className="text-[11px] text-slate-400">Max hand total to declare Show</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.showLimit}
-              onChange={(e) => onUpdateSettings({ showLimit: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              value={localSettings.showLimit}
+              onChange={(e) => handleSettingChange({ showLimit: Number(e.target.value) })}
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
               {[5, 7, 10, 12, 15, 20].map((v) => (
-                <option key={v} value={v} className="bg-slate-900 text-white py-1">
+                <option key={v} value={v} className="bg-slate-900 text-white py-1.5">
                   ≤ {v} Points
                 </option>
               ))}
@@ -341,19 +343,18 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           {/* 7. Wrong Show Penalty */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Wrong Show Penalty</label>
               <p className="text-[11px] text-slate-400">Penalty added if show is tied or beaten</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.wrongShowPenalty}
-              onChange={(e) => onUpdateSettings({ wrongShowPenalty: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              value={localSettings.wrongShowPenalty}
+              onChange={(e) => handleSettingChange({ wrongShowPenalty: Number(e.target.value) })}
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
               {[20, 30, 40, 50, 60, 80].map((p) => (
-                <option key={p} value={p} className="bg-slate-900 text-white py-1">
+                <option key={p} value={p} className="bg-slate-900 text-white py-1.5">
                   +{p} Points
                 </option>
               ))}
@@ -361,67 +362,65 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           {/* 8. Target Score & Single Round Mode */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Game Mode / Target</label>
               <p className="text-[11px] text-slate-400">Elimination target or single round</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.singleRoundMode ? 'single' : String(settings.gameTargetScore)}
+              value={localSettings.singleRoundMode ? 'single' : String(localSettings.gameTargetScore)}
               onChange={(e) => {
                 if (e.target.value === 'single') {
-                  onUpdateSettings({ singleRoundMode: true });
+                  handleSettingChange({ singleRoundMode: true });
                 } else {
-                  onUpdateSettings({
+                  handleSettingChange({
                     singleRoundMode: false,
                     gameTargetScore: Number(e.target.value),
                   });
                 }
               }}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              <option value="50" className="bg-slate-900 text-white py-1">Target 50 Pts</option>
-              <option value="100" className="bg-slate-900 text-white py-1">Target 100 Pts (Default)</option>
-              <option value="150" className="bg-slate-900 text-white py-1">Target 150 Pts</option>
-              <option value="single" className="bg-slate-900 text-white py-1">Single Round Mode</option>
+              <option value="50" className="bg-slate-900 text-white py-1.5">Target 50 Pts</option>
+              <option value="100" className="bg-slate-900 text-white py-1.5">Target 100 Pts (Default)</option>
+              <option value="150" className="bg-slate-900 text-white py-1.5">Target 150 Pts</option>
+              <option value="single" className="bg-slate-900 text-white py-1.5">Single Round Mode</option>
             </select>
           </div>
 
           {/* 9. Quick Match / Slap Bonus */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Quick Match (Slap)</label>
               <p className="text-[11px] text-slate-400">Discard matching rank out of turn</p>
             </div>
             <button
-              disabled={!isHost}
-              onClick={() => onUpdateSettings({ quickMatch: !settings.quickMatch })}
-              className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center ${
-                settings.quickMatch ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
-              } disabled:opacity-60`}
+              type="button"
+              onClick={() => handleSettingChange({ quickMatch: !localSettings.quickMatch })}
+              className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
+                localSettings.quickMatch ? 'bg-amber-500 justify-end' : 'bg-slate-700 justify-start'
+              }`}
             >
               <span className="w-5 h-5 rounded-full bg-white shadow-md block"></span>
             </button>
           </div>
 
           {/* 10. Turn Timer */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Turn Timer</label>
               <p className="text-[11px] text-slate-400">Auto-plays move on timeout</p>
             </div>
             <select
-              disabled={!isHost}
-              value={settings.turnTimerSeconds}
-              onChange={(e) => onUpdateSettings({ turnTimerSeconds: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
+              value={localSettings.turnTimerSeconds}
+              onChange={(e) => handleSettingChange({ turnTimerSeconds: Number(e.target.value) })}
+              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              <option value={0} className="bg-slate-900 text-white py-1">Disabled</option>
-              <option value={15} className="bg-slate-900 text-white py-1">15 Seconds</option>
-              <option value={30} className="bg-slate-900 text-white py-1">30 Seconds</option>
-              <option value={45} className="bg-slate-900 text-white py-1">45 Seconds</option>
-              <option value={60} className="bg-slate-900 text-white py-1">60 Seconds</option>
+              <option value={0} className="bg-slate-900 text-white py-1.5">Disabled</option>
+              <option value={15} className="bg-slate-900 text-white py-1.5">15 Seconds</option>
+              <option value={30} className="bg-slate-900 text-white py-1.5">30 Seconds</option>
+              <option value={45} className="bg-slate-900 text-white py-1.5">45 Seconds</option>
+              <option value={60} className="bg-slate-900 text-white py-1.5">60 Seconds</option>
             </select>
           </div>
         </div>
@@ -429,4 +428,3 @@ export const Lobby: React.FC<LobbyProps> = ({
     </div>
   );
 };
-
