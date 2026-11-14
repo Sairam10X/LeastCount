@@ -4,6 +4,7 @@ export { RoomDO };
 
 export interface Env {
   ROOM_DO: DurableObjectNamespace;
+  ASSETS?: Fetcher;
 }
 
 export default {
@@ -53,6 +54,11 @@ export default {
       const id = env.ROOM_DO.idFromName(roomCode);
       const obj = env.ROOM_DO.get(id);
       return obj.fetch(request);
+    }
+
+    // Serve frontend static assets if available (unified worker deployment)
+    if (env.ASSETS) {
+      return env.ASSETS.fetch(request);
     }
 
     return new Response('Least Count Worker: connect to /ws/:roomCode', {
