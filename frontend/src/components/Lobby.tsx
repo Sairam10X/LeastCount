@@ -24,6 +24,7 @@ interface LobbyProps {
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onStartGame: () => void;
   onKickPlayer: (playerId: string) => void;
+  onClaimHost?: () => void;
 }
 
 export const Lobby: React.FC<LobbyProps> = ({
@@ -35,6 +36,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onUpdateSettings,
   onStartGame,
   onKickPlayer,
+  onClaimHost,
 }) => {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -197,11 +199,20 @@ export const Lobby: React.FC<LobbyProps> = ({
           <h3 className="font-bold text-sm sm:text-base text-white">
             Game Rules & Settings
           </h3>
-          {!isHost && (
+          {!isHost && onClaimHost ? (
+            <button
+              onClick={onClaimHost}
+              className="ml-auto flex items-center space-x-1 text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-amber-500/50 transition active:scale-95"
+              title="Click to take host control in this room"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span>Claim Host Control</span>
+            </button>
+          ) : !isHost ? (
             <span className="text-xs text-slate-400 ml-auto italic">
               (Host only)
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* Warning if single deck and >5 players */}
@@ -225,10 +236,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               disabled={!isHost}
               value={settings.maxPlayers}
               onChange={(e) => onUpdateSettings({ maxPlayers: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
               {[2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={n}>
+                <option key={n} value={n} className="bg-slate-900 text-white py-1">
                   {n} Players
                 </option>
               ))}
@@ -247,10 +258,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               onChange={(e) =>
                 onUpdateSettings({ deckMode: e.target.value as 'single' | 'double' })
               }
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
-              <option value="single">Single Deck (52)</option>
-              <option value="double">Double Deck (104)</option>
+              <option value="single" className="bg-slate-900 text-white py-1">Single Deck (52)</option>
+              <option value="double" className="bg-slate-900 text-white py-1">Double Deck (104)</option>
             </select>
           </div>
 
@@ -285,10 +296,10 @@ export const Lobby: React.FC<LobbyProps> = ({
                   faceCardValue: e.target.value as 'ten' | 'actual',
                 })
               }
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
-              <option value="ten">Standard (all 10 pts)</option>
-              <option value="actual">Actual (J=11, Q=12, K=13)</option>
+              <option value="ten" className="bg-slate-900 text-white py-1">Standard (all 10 pts)</option>
+              <option value="actual" className="bg-slate-900 text-white py-1">Actual (J=11, Q=12, K=13)</option>
             </select>
           </div>
 
@@ -302,10 +313,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               disabled={!isHost}
               value={settings.aceValue}
               onChange={(e) => onUpdateSettings({ aceValue: Number(e.target.value) as 1 | 14 })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
-              <option value={1}>1 Point</option>
-              <option value={14}>14 Points</option>
+              <option value={1} className="bg-slate-900 text-white py-1">1 Point</option>
+              <option value={14} className="bg-slate-900 text-white py-1">14 Points</option>
             </select>
           </div>
 
@@ -319,10 +330,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               disabled={!isHost}
               value={settings.showLimit}
               onChange={(e) => onUpdateSettings({ showLimit: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
               {[5, 7, 10, 12, 15, 20].map((v) => (
-                <option key={v} value={v}>
+                <option key={v} value={v} className="bg-slate-900 text-white py-1">
                   ≤ {v} Points
                 </option>
               ))}
@@ -339,10 +350,10 @@ export const Lobby: React.FC<LobbyProps> = ({
               disabled={!isHost}
               value={settings.wrongShowPenalty}
               onChange={(e) => onUpdateSettings({ wrongShowPenalty: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
               {[20, 30, 40, 50, 60, 80].map((p) => (
-                <option key={p} value={p}>
+                <option key={p} value={p} className="bg-slate-900 text-white py-1">
                   +{p} Points
                 </option>
               ))}
@@ -368,12 +379,12 @@ export const Lobby: React.FC<LobbyProps> = ({
                   });
                 }
               }}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
-              <option value="50">Target 50 Pts</option>
-              <option value="100">Target 100 Pts (Default)</option>
-              <option value="150">Target 150 Pts</option>
-              <option value="single">Single Round Mode</option>
+              <option value="50" className="bg-slate-900 text-white py-1">Target 50 Pts</option>
+              <option value="100" className="bg-slate-900 text-white py-1">Target 100 Pts (Default)</option>
+              <option value="150" className="bg-slate-900 text-white py-1">Target 150 Pts</option>
+              <option value="single" className="bg-slate-900 text-white py-1">Single Round Mode</option>
             </select>
           </div>
 
@@ -404,13 +415,13 @@ export const Lobby: React.FC<LobbyProps> = ({
               disabled={!isHost}
               value={settings.turnTimerSeconds}
               onChange={(e) => onUpdateSettings({ turnTimerSeconds: Number(e.target.value) })}
-              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60"
+              className="bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white focus:ring-1 focus:ring-indigo-500 disabled:opacity-60 cursor-pointer"
             >
-              <option value={0}>Disabled</option>
-              <option value={15}>15 Seconds</option>
-              <option value={30}>30 Seconds</option>
-              <option value={45}>45 Seconds</option>
-              <option value={60}>60 Seconds</option>
+              <option value={0} className="bg-slate-900 text-white py-1">Disabled</option>
+              <option value={15} className="bg-slate-900 text-white py-1">15 Seconds</option>
+              <option value={30} className="bg-slate-900 text-white py-1">30 Seconds</option>
+              <option value={45} className="bg-slate-900 text-white py-1">45 Seconds</option>
+              <option value={60} className="bg-slate-900 text-white py-1">60 Seconds</option>
             </select>
           </div>
         </div>

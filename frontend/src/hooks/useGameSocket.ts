@@ -245,6 +245,10 @@ export function useGameSocket(roomCode: string | null) {
     [send]
   );
 
+  const claimHost = useCallback(() => {
+    send({ type: 'claim_host' });
+  }, [send]);
+
   return {
     gameState,
     isConnected,
@@ -254,6 +258,7 @@ export function useGameSocket(roomCode: string | null) {
     myPlayerId,
     join,
     updateSettings,
+    claimHost,
     startGame,
     nextRound,
     restartGame,

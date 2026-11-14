@@ -133,6 +133,7 @@ export interface AuthoritativeGameState {
   stock: Card[]; // Secret!
   discardPile: Card[];
   lastDiscard: LastDiscard | null;
+  availablePickupCards: Card[] | null;
   roundResults: RoundResult | null;
   activityLog: ActivityLogEntry[];
   actionSeq: number;
@@ -159,6 +160,7 @@ export interface PersonalizedGameState {
   stockCount: number;
   discardTop: Card | null;
   lastDiscard: LastDiscard | null;
+  availablePickupCards: Card[] | null;
   canShow: boolean;
   canDiscard: boolean;
   canDraw: boolean;
@@ -179,6 +181,7 @@ export type ClientMessage =
   | { type: 'discard'; cardIds: string[]; seq: number }
   | { type: 'draw'; source: 'stock' | 'discard'; discardCardId?: string; seq: number }
   | { type: 'show'; seq: number }
+  | { type: 'claim_host' }
   | { type: 'quick_match_discard'; cardIds: string[]; seq: number }
   | { type: 'ping' };
 

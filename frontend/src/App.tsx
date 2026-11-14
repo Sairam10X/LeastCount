@@ -64,6 +64,7 @@ export function App() {
     myPlayerId,
     join,
     updateSettings,
+    claimHost,
     startGame,
     nextRound,
     restartGame,
@@ -388,6 +389,7 @@ export function App() {
             isHost={gameState.isHost}
             myPlayerId={gameState.myId}
             onUpdateSettings={updateSettings}
+            onClaimHost={claimHost}
             onStartGame={startGame}
             onKickPlayer={kickPlayer}
           />
@@ -416,6 +418,7 @@ export function App() {
               stockCount={gameState.stockCount}
               discardTop={gameState.discardTop}
               lastDiscard={gameState.lastDiscard}
+              availablePickupCards={gameState.availablePickupCards}
               turnPhase={gameState.turnPhase}
               isMyTurn={gameState.isMyTurn}
               currentTurnPlayerName={currentTurnPlayer?.name || 'Player'}
@@ -438,6 +441,7 @@ export function App() {
                 turnPhase={gameState.turnPhase}
                 canShow={gameState.canShow}
                 canDiscard={gameState.canDiscard}
+                discardTop={gameState.discardTop}
                 selectedCardIds={selectedCardIds}
                 onToggleSelectCard={handleToggleSelectCard}
                 onDiscard={handleDiscard}

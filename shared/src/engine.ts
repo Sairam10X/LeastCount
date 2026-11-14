@@ -283,6 +283,7 @@ export function getPersonalizedState(
     stockCount: state.stock.length,
     discardTop,
     lastDiscard: state.lastDiscard,
+    availablePickupCards: state.availablePickupCards || null,
     canShow,
     canDiscard,
     canDraw,

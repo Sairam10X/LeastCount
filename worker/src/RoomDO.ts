@@ -45,6 +45,10 @@ export class RoomDO extends DurableObject<Env> {
     const saved = await this.ctx.storage.get<AuthoritativeGameState>('state');
     if (saved) {
       this.state = saved;
+      if (!this.state.availablePickupCards) {
+        this.state.availablePickupCards = null;
+      }
+      this.ensureHostAssigned();
     } else {
       this.state = {
         roomCode,
@@ -61,6 +65,7 @@ export class RoomDO extends DurableObject<Env> {
         stock: [],
         discardPile: [],
         lastDiscard: null,
+        availablePickupCards: null,
         roundResults: null,
         activityLog: [],
         actionSeq: 0,
@@ -158,15 +163,10 @@ export class RoomDO extends DurableObject<Env> {
         player.connected = false;
         this.addLog(`${player.name} disconnected.`, 'system');
 
-        // Check if host disconnected; if so, assign host to first connected player
         if (player.isHost) {
-          const nextHost = this.state.players.find((p) => p.connected && !p.isSpectator);
-          if (nextHost) {
-            player.isHost = false;
-            nextHost.isHost = true;
-            this.addLog(`${nextHost.name} is now the host.`, 'system');
-          }
+          player.isHost = false;
         }
+        this.ensureHostAssigned();
 
         await this.saveState();
         this.broadcastSync();
@@ -259,11 +259,36 @@ export class RoomDO extends DurableObject<Env> {
       case 'show':
         await this.handleShow(ws, player, msg.seq);
         break;
+      case 'claim_host':
+        if (this.state.status === 'lobby') {
+          for (const p of this.state.players) {
+            p.isHost = false;
+          }
+          player.isHost = true;
+          this.addLog(`${player.name} claimed host permissions.`, 'system');
+          await this.saveState();
+          this.broadcastSync();
+        }
+        break;
       case 'quick_match_discard':
         await this.handleQuickMatch(ws, player, msg.cardIds, msg.seq);
         break;
       default:
         this.sendError(ws, 'Unknown command');
+    }
+  }
+
+  private ensureHostAssigned(): void {
+    const activeNonSpectators = this.state.players.filter((p) => p.connected && !p.isSpectator);
+    const hasConnectedHost = activeNonSpectators.some((p) => p.isHost);
+    if (!hasConnectedHost && activeNonSpectators.length > 0) {
+      // Clear host from all
+      for (const p of this.state.players) {
+        p.isHost = false;
+      }
+      // Assign host to first connected active player
+      activeNonSpectators[0].isHost = true;
+      this.addLog(`${activeNonSpectators[0].name} is now the room host.`, 'system');
     }
   }
 
@@ -285,6 +310,8 @@ export class RoomDO extends DurableObject<Env> {
           playerId: existing.id,
           sessionToken: existing.sessionToken,
         });
+
+        this.ensureHostAssigned();
 
         ws.send(
           JSON.stringify({
@@ -310,12 +337,15 @@ export class RoomDO extends DurableObject<Env> {
 
     const newPlayerId = `p-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
     const newSessionToken = `tok-${Math.random().toString(36).substring(2)}-${Date.now().toString(36)}`;
-    const isFirstPlayer = this.state.players.length === 0;
+    
+    // Check if there is already any connected host in the room
+    const hasConnectedHost = this.state.players.some((p) => p.isHost && p.connected);
+    const shouldBeHost = !hasConnectedHost && !shouldBeSpectator;
 
     const newPlayer: PlayerInternal = {
       id: newPlayerId,
       name: (playerName || 'Player').trim().substring(0, 20),
-      isHost: isFirstPlayer,
+      isHost: shouldBeHost,
       connected: true,
       isSpectator: shouldBeSpectator,
       cardCount: 0,
@@ -325,7 +355,16 @@ export class RoomDO extends DurableObject<Env> {
       sessionToken: newSessionToken,
     };
 
+    if (shouldBeHost) {
+      // Demote any offline hosts
+      for (const p of this.state.players) {
+        p.isHost = false;
+      }
+    }
+
     this.state.players.push(newPlayer);
+    this.ensureHostAssigned();
+
     this.setAttachment(ws, {
       playerId: newPlayerId,
       sessionToken: newSessionToken,
@@ -574,7 +613,7 @@ export class RoomDO extends DurableObject<Env> {
       return;
     }
     if (this.state.turnPhase !== 'action') {
-      this.sendError(ws, 'You have already discarded. Draw a card to complete your turn.');
+      this.sendError(ws, 'You have already discarded. Pick a card to complete your turn.');
       return;
     }
 
@@ -588,10 +627,16 @@ export class RoomDO extends DurableObject<Env> {
     const discarded = validation.cards;
     const discardedIds = new Set(discarded.map((c) => c.id));
 
+    // Card on top of the discard pile BEFORE this discard is added
+    const topCardBefore =
+      this.state.discardPile.length > 0
+        ? this.state.discardPile[this.state.discardPile.length - 1]
+        : null;
+
     // Remove cards from player's hand
     this.state.hands[player.id] = hand.filter((c) => !discardedIds.has(c.id));
 
-    // Add to discard pile
+    // Add cards to discard pile
     this.state.discardPile.push(...discarded);
     this.state.lastDiscard = {
       playerId: player.id,
@@ -599,12 +644,33 @@ export class RoomDO extends DurableObject<Env> {
       cards: discarded,
     };
 
-    // Transition to draw phase
-    this.state.turnPhase = 'draw';
-    this.state.actionSeq++;
-
+    // Check if the discarded card's rank matches the top of the discard pile
+    const isLevelMatch = topCardBefore !== null && discarded[0].rank === topCardBefore.rank;
     const cardNames = discarded.map((c) => `${c.rank}${c.suit === 'JOKER' ? '★' : c.suit}`).join(' ');
-    this.addLog(`${player.name} discarded [${cardNames}].`);
+
+    if (isLevelMatch) {
+      // LEVEL MATCH: Player need NOT pick any card! Turn is complete!
+      this.state.availablePickupCards = null;
+      this.addLog(
+        `⚡ LEVEL MATCH! ${player.name} discarded [${cardNames}] matching rank ${topCardBefore.rank} — No card picked! Turn complete.`
+      );
+
+      // Turn is complete: advance to next player
+      const nextPlayerId = getNextTurnPlayerId(this.state.players, player.id);
+      this.state.currentTurnPlayerId = nextPlayerId;
+      this.state.turnPhase = 'action';
+      this.state.actionSeq++;
+      this.setTurnTimer();
+    } else {
+      // DOES NOT MATCH: Player MUST pick 1 card!
+      // They can pick from stock OR pick the card that was on top before their discard
+      this.state.availablePickupCards = topCardBefore ? [topCardBefore] : null;
+      this.state.turnPhase = 'draw';
+      this.state.actionSeq++;
+      this.addLog(
+        `${player.name} discarded [${cardNames}] (rank ${discarded[0].rank} != ${topCardBefore?.rank || 'deck'}). Must pick 1 card from Stock or Discard deck.`
+      );
+    }
 
     await this.saveState();
     this.broadcastSync();
@@ -626,7 +692,7 @@ export class RoomDO extends DurableObject<Env> {
       return;
     }
     if (this.state.turnPhase !== 'draw') {
-      this.sendError(ws, 'You must discard before drawing.');
+      this.sendError(ws, 'You must discard before picking a card.');
       return;
     }
 
@@ -643,12 +709,12 @@ export class RoomDO extends DurableObject<Env> {
       }
     }
 
-    const lastDiscardCards = this.state.lastDiscard?.cards || null;
+    const availableCards = this.state.availablePickupCards || [];
     const validation = validateDraw(
       source,
       discardCardId,
       this.state.stock.length,
-      lastDiscardCards
+      availableCards
     );
 
     if (!validation.valid) {
@@ -663,28 +729,27 @@ export class RoomDO extends DurableObject<Env> {
         this.sendError(ws, 'No cards left in stock.');
         return;
       }
-      this.addLog(`${player.name} drew from stock.`);
+      this.addLog(`${player.name} drew a new card from stock.`);
     } else {
-      // Drawn from discard set
-      const chosen = validation.chosenCard;
+      // Drawn from available discard card
+      const chosen =
+        (discardCardId && availableCards.find((c) => c.id === discardCardId)) ||
+        validation.chosenCard ||
+        availableCards[0];
+
       if (!chosen) {
-        this.sendError(ws, 'Could not determine card from discard.');
+        this.sendError(ws, 'No card available to pick from discard deck.');
         return;
       }
-      // Remove chosen card from discard pile
-      let idx = -1;
-      for (let i = this.state.discardPile.length - 1; i >= 0; i--) {
-        if (this.state.discardPile[i].id === chosen.id) {
-          idx = i;
-          break;
-        }
-      }
+
+      // Remove chosen card from this.state.discardPile
+      const idx = this.state.discardPile.findIndex((c) => c.id === chosen.id);
       if (idx !== -1) {
         this.state.discardPile.splice(idx, 1);
       }
       drawnCard = chosen;
       this.addLog(
-        `${player.name} drew ${chosen.rank}${chosen.suit === 'JOKER' ? '★' : chosen.suit} from discard.`
+        `${player.name} picked ${chosen.rank}${chosen.suit === 'JOKER' ? '★' : chosen.suit} from the discard deck.`
       );
     }
 
@@ -694,7 +759,8 @@ export class RoomDO extends DurableObject<Env> {
     }
     this.state.hands[player.id].push(drawnCard);
 
-    // End turn and advance to next player
+    // Turn is complete: clear availablePickupCards and advance to next player
+    this.state.availablePickupCards = null;
     const nextPlayerId = getNextTurnPlayerId(this.state.players, player.id);
     this.state.currentTurnPlayerId = nextPlayerId;
     this.state.turnPhase = 'action';
@@ -845,6 +911,11 @@ export class RoomDO extends DurableObject<Env> {
       if (hand.length > 0) {
         // Discard highest value card
         const cardToDiscard = chooseAutoDiscard(hand, this.state.settings);
+        const topCardBefore =
+          this.state.discardPile.length > 0
+            ? this.state.discardPile[this.state.discardPile.length - 1]
+            : null;
+
         this.state.hands[currentTurnId] = hand.filter((c) => c.id !== cardToDiscard.id);
         this.state.discardPile.push(cardToDiscard);
         this.state.lastDiscard = {
@@ -852,22 +923,26 @@ export class RoomDO extends DurableObject<Env> {
           playerName: player.name,
           cards: [cardToDiscard],
         };
-      }
 
-      // Draw top from stock
-      const reshuffleResult = reshuffleStockIfNeeded(
-        this.state.stock,
-        this.state.discardPile
-      );
-      if (reshuffleResult.reshuffled) {
-        this.state.stock = reshuffleResult.stock;
-        this.state.discardPile = reshuffleResult.discardPile;
-      }
+        const isMatch = topCardBefore && cardToDiscard.rank === topCardBefore.rank;
+        if (!isMatch) {
+          // If no match, auto-draw from stock
+          const reshuffleResult = reshuffleStockIfNeeded(
+            this.state.stock,
+            this.state.discardPile
+          );
+          if (reshuffleResult.reshuffled) {
+            this.state.stock = reshuffleResult.stock;
+            this.state.discardPile = reshuffleResult.discardPile;
+          }
 
-      const drawn = this.state.stock.pop();
-      if (drawn) {
-        this.state.hands[currentTurnId].push(drawn);
+          const drawn = this.state.stock.pop();
+          if (drawn) {
+            this.state.hands[currentTurnId].push(drawn);
+          }
+        }
       }
+      this.state.availablePickupCards = null;
     } else if (this.state.turnPhase === 'draw') {
       // Already discarded, just draw from stock
       const reshuffleResult = reshuffleStockIfNeeded(
@@ -882,6 +957,7 @@ export class RoomDO extends DurableObject<Env> {
       if (drawn) {
         this.state.hands[currentTurnId].push(drawn);
       }
+      this.state.availablePickupCards = null;
     }
 
     // Advance turn to next player

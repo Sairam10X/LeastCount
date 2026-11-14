@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card as CardType, GameSettings, TurnPhase } from 'shared';
 import { Card } from './Card';
-import { Check, Flame, Trophy } from 'lucide-react';
+import { Check, Flame, Trophy, Zap } from 'lucide-react';
 
 interface PlayerHandProps {
   hand: CardType[];
@@ -11,6 +11,7 @@ interface PlayerHandProps {
   turnPhase: TurnPhase;
   canShow: boolean;
   canDiscard: boolean;
+  discardTop: CardType | null;
   selectedCardIds: string[];
   onToggleSelectCard: (cardId: string) => void;
   onDiscard: () => void;
@@ -26,6 +27,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   turnPhase,
   canShow,
   canDiscard,
+  discardTop,
   selectedCardIds,
   onToggleSelectCard,
   onDiscard,
@@ -49,6 +51,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
       rank: firstRank,
     };
   }, [hand, selectedCardIds]);
+
+  const isMatchWithTop = useMemo(() => {
+    if (!selectionValidation.valid || selectedCardIds.length === 0 || !discardTop) {
+      return false;
+    }
+    return selectionValidation.rank === discardTop.rank;
+  }, [selectionValidation, selectedCardIds, discardTop]);
 
   const totalColor =
     handTotal <= settings.showLimit
@@ -93,7 +102,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
             }
             className={`flex items-center space-x-1.5 px-4 py-1.5 rounded-lg font-bold text-xs sm:text-sm shadow-md transition active:scale-95 ${
               canDiscard && selectionValidation.valid && selectedCardIds.length > 0
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400'
+                ? isMatchWithTop
+                  ? 'bg-gradient-to-r from-amber-500 to-emerald-500 text-slate-950 ring-2 ring-amber-300 shadow-amber-500/30 font-black animate-pulse'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400'
                 : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
             }`}
             title={
@@ -101,12 +112,18 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
                 ? 'Wait for your turn to discard'
                 : !selectionValidation.valid
                 ? selectionValidation.error
-                : 'Discard selected card(s)'
+                : isMatchWithTop
+                ? 'Matches top discard level! You will NOT pick a card.'
+                : 'Discard selected card(s) and then pick 1 card.'
             }
           >
-            <Check className="w-4 h-4" />
+            {isMatchWithTop ? <Zap className="w-4 h-4 fill-current" /> : <Check className="w-4 h-4" />}
             <span>
-              Discard {selectedCardIds.length > 0 ? `(${selectedCardIds.length})` : ''}
+              {selectedCardIds.length === 0
+                ? 'Discard'
+                : isMatchWithTop
+                ? `Match & Discard (No Pick!)`
+                : `Discard (${selectedCardIds.length})`}
             </span>
           </button>
 
@@ -135,11 +152,23 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
         </div>
       </div>
 
-      {/* Validation hint if invalid selection */}
-      {!selectionValidation.valid && selectedCardIds.length > 0 && (
-        <span className="text-[11px] text-red-400 font-medium mb-1">
-          ⚠️ {selectionValidation.error}
-        </span>
+      {/* Helpful Hint based on selection and top discard */}
+      {isMyTurn && turnPhase === 'action' && selectedCardIds.length > 0 && (
+        <div className="mb-1 text-xs text-center font-medium">
+          {selectionValidation.valid ? (
+            isMatchWithTop ? (
+              <span className="text-amber-300 font-bold bg-amber-950/70 border border-amber-500/40 px-3 py-0.5 rounded-full">
+                ⚡ Same level ({discardTop?.rank})! If discarded, your turn ends immediately without picking!
+              </span>
+            ) : (
+              <span className="text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700">
+                Discarding {selectionValidation.rank} (top is {discardTop?.rank || 'none'}) — you will pick 1 card after.
+              </span>
+            )
+          ) : (
+            <span className="text-red-400 font-bold">⚠️ {selectionValidation.error}</span>
+          )}
+        </div>
       )}
 
       {/* Interactive Fanned Hand */}
@@ -169,4 +198,3 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
     </div>
   );
 };
-
