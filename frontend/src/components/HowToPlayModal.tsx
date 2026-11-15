@@ -54,7 +54,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
               <strong>{settings.faceCardValue === 'ten' ? '10 pts' : 'Actual (11, 12, 13)'}</strong>
             </div>
             <div>
-              • Jokers: <strong>{settings.externalJokers ? 'Enabled (0 pts)' : 'None'}</strong>
+              • External Jokers: <strong>{settings.externalJokers ? 'Enabled (0 pts & Wild Match)' : 'None'}</strong>
             </div>
             <div>
               • Match Target:{' '}
@@ -81,13 +81,12 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
             <h4 className="font-bold text-emerald-400 mb-1">2. Each Turn</h4>
             <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
               <li>
-                <strong>Step 1 - Discard:</strong> Throw 1 card, or multiple cards of the same
-                rank (a set, e.g. 7♠ and 7♦), onto the discard pile.
+                <strong>Step 1 - Discard & Same Level Rule:</strong> Throw 1 card (or a set of same rank) onto the discard pile.
+                If your card is of the <em>same level</em> as the top card on the discard pile, or if an <em>External Joker</em> is played,
+                your turn completes immediately without drawing a card!
               </li>
               <li>
-                <strong>Step 2 - Draw:</strong> Pick 1 card from the stock pile, OR from the
-                discard pile. If the previous player discarded a set, you may pick any one card
-                from that set!
+                <strong>Step 2 - Draw (if level doesn't match):</strong> If your discarded card does not match the level, pick 1 card from either the stock pile or the previous top card of the discard pile.
               </li>
             </ul>
           </div>

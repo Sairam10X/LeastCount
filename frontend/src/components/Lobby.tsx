@@ -340,8 +340,8 @@ export const Lobby: React.FC<LobbyProps> = ({
           {/* 3. External Jokers */}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-200">Printed Jokers</label>
-              <p className="text-[11px] text-slate-400">2 jokers per deck (worth 0 pts)</p>
+              <label className="text-xs font-semibold text-slate-200">External Jokers</label>
+              <p className="text-[11px] text-slate-400">2 per deck (0 pts) • Same level wild discard</p>
             </div>
             <button
               type="button"

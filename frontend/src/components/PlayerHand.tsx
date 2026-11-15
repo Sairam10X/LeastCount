@@ -70,8 +70,13 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
     if (!selectionValidation.valid || selectedCardIds.length === 0 || !discardTop) {
       return false;
     }
-    return selectionValidation.rank === discardTop.rank;
-  }, [selectionValidation, selectedCardIds, discardTop]);
+    const isJokerDiscard = selectionValidation.rank === 'JOKER';
+    const isTopJoker = discardTop.rank === 'JOKER' || Boolean(discardTop.isJoker);
+    const isRankMatch = selectionValidation.rank === discardTop.rank;
+    const allowsJokerMatch = Boolean(settings.externalJokers);
+
+    return isRankMatch || (allowsJokerMatch && (isJokerDiscard || isTopJoker));
+  }, [selectionValidation, selectedCardIds, discardTop, settings.externalJokers]);
 
   const hasShowLimit = settings.showLimit > 0;
   const isWithinLimit = !hasShowLimit || handTotal <= settings.showLimit;
@@ -268,7 +273,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
           {selectionValidation.valid ? (
             isMatchWithTop ? (
               <span className="text-amber-300 font-bold bg-amber-950/70 border border-amber-500/40 px-3 py-0.5 rounded-full">
-                ⚡ Same level ({discardTop?.rank})! If discarded, your turn ends immediately without picking!
+                ⚡ Same level {selectionValidation.rank === 'JOKER' ? '(External Joker Wild)' : `(${discardTop?.rank})`}! If discarded, turn ends immediately without picking!
               </span>
             ) : (
               <span className="text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700">

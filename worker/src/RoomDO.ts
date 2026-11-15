@@ -653,15 +653,25 @@ export class RoomDO extends DurableObject<Env> {
       cards: discarded,
     };
 
-    // Check if the discarded card's rank matches the top of the discard pile
-    const isLevelMatch = topCardBefore !== null && discarded[0].rank === topCardBefore.rank;
+    // Check if the discarded card matches the same level of the discard pile
+    // Supports external jokers matching any level
+    const isJokerDiscard = discarded[0].rank === 'JOKER' || Boolean(discarded[0].isJoker);
+    const isTopJoker = topCardBefore !== null && (topCardBefore.rank === 'JOKER' || Boolean(topCardBefore.isJoker));
+    const isRankMatch = topCardBefore !== null && discarded[0].rank === topCardBefore.rank;
+    const isLevelMatch = isRankMatch || (this.state.settings.externalJokers && (isJokerDiscard || isTopJoker));
     const cardNames = discarded.map((c) => `${c.rank}${c.suit === 'JOKER' ? '★' : c.suit}`).join(' ');
 
     if (isLevelMatch) {
       // LEVEL MATCH: Player need NOT pick any card! Turn is complete!
       this.state.availablePickupCards = null;
+      const matchReason = isJokerDiscard
+        ? 'with External Joker (Wild Level Match)'
+        : isTopJoker
+        ? 'on External Joker (Wild Level Match)'
+        : `matching rank ${topCardBefore?.rank}`;
+
       this.addLog(
-        `⚡ LEVEL MATCH! ${player.name} discarded [${cardNames}] matching rank ${topCardBefore.rank} — No card picked! Turn complete.`
+        `⚡ SAME LEVEL MATCH! ${player.name} discarded [${cardNames}] ${matchReason} — No card picked! Turn complete.`
       );
 
       // Turn is complete: advance to next player
@@ -881,7 +891,12 @@ export class RoomDO extends DurableObject<Env> {
         : null;
 
     const hand = this.state.hands[player.id] || [];
-    const validation = validateQuickMatchDiscard(hand, cardIds, topDiscard);
+    const validation = validateQuickMatchDiscard(
+      hand,
+      cardIds,
+      topDiscard,
+      this.state.settings.externalJokers
+    );
     if (!validation.valid || !validation.cards) {
       this.sendError(ws, validation.error || 'Cannot quick match discard.');
       return;

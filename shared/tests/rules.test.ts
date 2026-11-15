@@ -56,10 +56,19 @@ describe('Rules Engine Validations', () => {
 
   it('rejects quick match discard when rank does not match top discard', () => {
     const topDiscard: Card = { id: 'top', suit: 'D', rank: '8' };
-    const res = validateQuickMatchDiscard(hand, ['c1'], topDiscard);
+    const res = validateQuickMatchDiscard(hand, ['c1'], topDiscard, false);
     expect(res.valid).toBe(false);
     expect(res.error).toBeDefined();
     expect(res.error?.toLowerCase()).toContain('not match');
+  });
+
+  it('allows external joker to match any top discard level when external jokers are enabled', () => {
+    const jokerHand: Card[] = [
+      { id: 'j1', suit: 'JOKER', rank: 'JOKER', isJoker: true },
+    ];
+    const topDiscard: Card = { id: 'top', suit: 'D', rank: '8' };
+    const res = validateQuickMatchDiscard(jokerHand, ['j1'], topDiscard, true);
+    expect(res.valid).toBe(true);
   });
 
   it('validates draw from stock when stock has cards', () => {

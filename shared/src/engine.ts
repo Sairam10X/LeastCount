@@ -62,7 +62,8 @@ export function validateDiscard(hand: Card[], cardIds: string[]): ValidationResu
 export function validateQuickMatchDiscard(
   hand: Card[],
   cardIds: string[],
-  topDiscard: Card | null
+  topDiscard: Card | null,
+  externalJokersEnabled: boolean = false
 ): ValidationResult {
   if (!topDiscard) {
     return { valid: false, error: 'No discard pile to match.' };
@@ -73,7 +74,12 @@ export function validateQuickMatchDiscard(
     return discardVal;
   }
 
-  if (discardVal.cards[0].rank !== topDiscard.rank) {
+  const isJoker = discardVal.cards[0].rank === 'JOKER' || Boolean(discardVal.cards[0].isJoker);
+  const isTopJoker = topDiscard.rank === 'JOKER' || Boolean(topDiscard.isJoker);
+  const isRankMatch = discardVal.cards[0].rank === topDiscard.rank;
+  const isLevelMatch = isRankMatch || (externalJokersEnabled && (isJoker || isTopJoker));
+
+  if (!isLevelMatch) {
     return {
       valid: false,
       error: `Cards do not match current top discard rank (${topDiscard.rank}).`,
