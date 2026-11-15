@@ -6,6 +6,7 @@ import { Check, Flame, MessageSquare, Send, Trophy, Zap } from 'lucide-react';
 interface PlayerHandProps {
   hand: CardType[];
   settings: GameSettings;
+  cutJoker?: CardType | null;
   handTotal: number;
   myScore?: number;
   playerName?: string;
@@ -29,6 +30,7 @@ const QUICK_CHATS = ['GG! 👏', 'Good luck! 🍀', 'Nice play! 🔥', 'Oops! �
 export const PlayerHand: React.FC<PlayerHandProps> = ({
   hand,
   settings,
+  cutJoker,
   handTotal,
   myScore = 0,
   playerName,
@@ -67,16 +69,22 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   }, [hand, selectedCardIds]);
 
   const isMatchWithTop = useMemo(() => {
-    if (!selectionValidation.valid || selectedCardIds.length === 0 || !discardTop) {
+    if (!selectionValidation.valid || selectedCardIds.length === 0 || !discardTop || !selectionValidation.rank) {
       return false;
     }
-    const isJokerDiscard = selectionValidation.rank === 'JOKER';
-    const isTopJoker = discardTop.rank === 'JOKER' || Boolean(discardTop.isJoker);
+    const isRankJoker = (rank?: string) => {
+      if (!rank) return false;
+      if (rank === 'JOKER') return true;
+      if (settings.externalJokers && cutJoker && rank === cutJoker.rank) return true;
+      return false;
+    };
+    const isJokerDiscard = isRankJoker(selectionValidation.rank);
+    const isTopJoker = isRankJoker(discardTop.rank) || Boolean(discardTop.isJoker);
     const isRankMatch = selectionValidation.rank === discardTop.rank;
-    const allowsJokerMatch = Boolean(settings.externalJokers);
+    const allowsJokerMatch = Boolean(settings.externalJokers || settings.printedJokers);
 
     return isRankMatch || (allowsJokerMatch && (isJokerDiscard || isTopJoker));
-  }, [selectionValidation, selectedCardIds, discardTop, settings.externalJokers]);
+  }, [selectionValidation, selectedCardIds, discardTop, settings.externalJokers, settings.printedJokers, cutJoker]);
 
   const hasShowLimit = settings.showLimit > 0;
   const isWithinLimit = !hasShowLimit || handTotal <= settings.showLimit;
@@ -273,7 +281,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
           {selectionValidation.valid ? (
             isMatchWithTop ? (
               <span className="text-amber-300 font-bold bg-amber-950/70 border border-amber-500/40 px-3 py-0.5 rounded-full">
-                ⚡ Same level {selectionValidation.rank === 'JOKER' ? '(External Joker Wild)' : `(${discardTop?.rank})`}! If discarded, turn ends immediately without picking!
+                ⚡ Same level {selectionValidation.rank === 'JOKER' || (cutJoker && selectionValidation.rank === cutJoker.rank) ? '(Joker Wild Match)' : `(${discardTop?.rank})`}! If discarded, turn ends immediately without picking!
               </span>
             ) : (
               <span className="text-slate-300 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700">
@@ -291,6 +299,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
         <div className="flex items-center -space-x-4 sm:-space-x-5 hover:space-x-1 transition-all duration-200">
           {hand.map((card, idx) => {
             const isSelected = selectedCardIds.includes(card.id);
+            const isWild = Boolean(
+              (cutJoker && card.rank === cutJoker.rank) ||
+              card.isJoker ||
+              card.rank === 'JOKER'
+            );
             return (
               <div
                 key={card.id}
@@ -302,6 +315,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
                 <Card
                   card={card}
                   isSelected={isSelected}
+                  isWildcardJoker={isWild}
                   onClick={() => onToggleSelectCard(card.id)}
                   size="md"
                 />

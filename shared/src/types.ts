@@ -30,10 +30,11 @@ export type AceValue = 1 | 14;
 export interface GameSettings {
   maxPlayers: number; // 2 to 8 (default: 4)
   deckMode: DeckMode; // single (52) or double (104)
-  externalJokers: boolean; // 2 jokers per deck, value = 0
+  printedJokers: boolean; // 2 printed jokers per deck, value = 0
+  externalJokers: boolean; // Cut/random joker card per round; all cards of matching rank = 0 pts & wild match
   faceCardValue: FaceCardValue; // K, Q, J = 10 or 13, 12, 11
   aceValue: AceValue; // 1 or 14
-  showLimit: number; // max hand sum allowed to call show, default 10
+  showLimit: number; // max hand sum allowed to call show, default 10 (0 = no limit)
   wrongShowPenalty: number; // penalty points added on wrong show, default 40
   gameTargetScore: number; // points to get eliminated, default 100 (0 for single round mode)
   singleRoundMode: boolean; // if true, game finishes after one round
@@ -44,6 +45,7 @@ export interface GameSettings {
 export const DEFAULT_SETTINGS: GameSettings = {
   maxPlayers: 4,
   deckMode: 'single',
+  printedJokers: false,
   externalJokers: false,
   faceCardValue: 'ten',
   aceValue: 1,
@@ -132,6 +134,7 @@ export interface AuthoritativeGameState {
   hands: Record<string, Card[]>; // Secret!
   stock: Card[]; // Secret!
   discardPile: Card[];
+  cutJoker: Card | null; // Selected external wildcard cut card (revealed if externalJokers is enabled)
   lastDiscard: LastDiscard | null;
   availablePickupCards: Card[] | null;
   roundResults: RoundResult | null;
@@ -158,6 +161,7 @@ export interface PersonalizedGameState {
   turnPhase: TurnPhase;
   turnTimeRemaining: number | null; // in seconds
   stockCount: number;
+  cutJoker: Card | null;
   discardTop: Card | null;
   lastDiscard: LastDiscard | null;
   availablePickupCards: Card[] | null;

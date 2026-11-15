@@ -1,6 +1,7 @@
 import {
   AuthoritativeGameState,
   Card,
+  DEFAULT_SETTINGS,
   GameSettings,
   PersonalizedGameState,
   PlayerInternal,
@@ -9,7 +10,7 @@ import {
   RoundResult,
   TurnPhase,
 } from './types';
-import { calculateHandTotal, getCardValue, resolveShow } from './scoring';
+import { calculateHandTotal, getCardValue, isCardJoker, resolveShow } from './scoring';
 import { reshuffleStockIfNeeded } from './deck';
 
 export interface ValidationResult {
@@ -57,13 +58,15 @@ export function validateDiscard(hand: Card[], cardIds: string[]): ValidationResu
 
 /**
  * Validates quick match / slap discard.
- * Rule: Discarding card(s) that match the rank of the current top discard card.
+ * Rule: Discarding card(s) that match the rank of the current top discard card,
+ * or either being a Joker (printed joker or external cut joker).
  */
 export function validateQuickMatchDiscard(
   hand: Card[],
   cardIds: string[],
   topDiscard: Card | null,
-  externalJokersEnabled: boolean = false
+  settingsOrEnabled: GameSettings | boolean = false,
+  cutJoker?: Card | null
 ): ValidationResult {
   if (!topDiscard) {
     return { valid: false, error: 'No discard pile to match.' };
@@ -74,10 +77,15 @@ export function validateQuickMatchDiscard(
     return discardVal;
   }
 
-  const isJoker = discardVal.cards[0].rank === 'JOKER' || Boolean(discardVal.cards[0].isJoker);
-  const isTopJoker = topDiscard.rank === 'JOKER' || Boolean(topDiscard.isJoker);
+  const settings: GameSettings =
+    typeof settingsOrEnabled === 'boolean'
+      ? { ...DEFAULT_SETTINGS, externalJokers: settingsOrEnabled }
+      : settingsOrEnabled;
+
+  const isJoker = isCardJoker(discardVal.cards[0], settings, cutJoker);
+  const isTopJoker = isCardJoker(topDiscard, settings, cutJoker);
   const isRankMatch = discardVal.cards[0].rank === topDiscard.rank;
-  const isLevelMatch = isRankMatch || (externalJokersEnabled && (isJoker || isTopJoker));
+  const isLevelMatch = isRankMatch || isJoker || isTopJoker;
 
   if (!isLevelMatch) {
     return {
@@ -148,9 +156,10 @@ export function validateDraw(
 export function validateShow(
   hand: Card[],
   settings: GameSettings,
-  turnPhase: TurnPhase
+  turnPhase: TurnPhase,
+  cutJoker?: Card | null
 ): { valid: boolean; error?: string; handTotal: number } {
-  const handTotal = calculateHandTotal(hand, settings);
+  const handTotal = calculateHandTotal(hand, settings, cutJoker);
 
   if (turnPhase !== 'action') {
     return {
@@ -197,16 +206,16 @@ export function getNextTurnPlayerId(
  * Finds the best single card to discard automatically when a turn times out.
  * Returns the card with highest point value (to minimize hand total).
  */
-export function chooseAutoDiscard(hand: Card[], settings: GameSettings): Card {
+export function chooseAutoDiscard(hand: Card[], settings: GameSettings, cutJoker?: Card | null): Card {
   if (hand.length === 0) {
     throw new Error('Cannot auto discard from empty hand');
   }
 
   let highestCard = hand[0];
-  let highestValue = getCardValue(highestCard, settings);
+  let highestValue = getCardValue(highestCard, settings, cutJoker);
 
   for (let i = 1; i < hand.length; i++) {
-    const val = getCardValue(hand[i], settings);
+    const val = getCardValue(hand[i], settings, cutJoker);
     if (val > highestValue) {
       highestValue = val;
       highestCard = hand[i];
@@ -232,7 +241,7 @@ export function getPersonalizedState(
   const isSpectator = targetPlayer?.isSpectator ?? false;
 
   const myHand = state.hands[targetPlayerId] || [];
-  const myHandTotal = calculateHandTotal(myHand, state.settings);
+  const myHandTotal = calculateHandTotal(myHand, state.settings, state.cutJoker);
 
   const isMyTurn =
     state.status === 'playing' &&
@@ -288,6 +297,7 @@ export function getPersonalizedState(
     turnPhase: state.turnPhase,
     turnTimeRemaining,
     stockCount: state.stock.length,
+    cutJoker: state.cutJoker || null,
     discardTop,
     lastDiscard: state.lastDiscard,
     availablePickupCards: state.availablePickupCards || null,

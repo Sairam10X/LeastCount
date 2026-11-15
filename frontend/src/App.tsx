@@ -438,10 +438,11 @@ export function App() {
               ))}
             </div>
 
-            {/* Central Poker Table Area (Stock & Discard) */}
+            {/* Central Poker Table Area (Stock, Cut Joker & Discard) */}
             <div className="flex-1 flex items-center justify-center min-h-0 my-auto">
               <GameTable
                 stockCount={gameState.stockCount}
+                cutJoker={gameState.cutJoker}
                 discardTop={gameState.discardTop}
                 lastDiscard={gameState.lastDiscard}
                 availablePickupCards={gameState.availablePickupCards}
@@ -464,6 +465,7 @@ export function App() {
                 <PlayerHand
                   hand={gameState.myHand}
                   settings={gameState.settings}
+                  cutJoker={gameState.cutJoker}
                   handTotal={gameState.myHandTotal}
                   myScore={myPlayer?.score ?? 0}
                   playerName={myPlayer?.name ?? playerName}
@@ -505,6 +507,7 @@ export function App() {
         settings={gameState?.settings || {
           maxPlayers: 4,
           deckMode: 'single',
+          printedJokers: false,
           externalJokers: false,
           faceCardValue: 'ten',
           aceValue: 1,

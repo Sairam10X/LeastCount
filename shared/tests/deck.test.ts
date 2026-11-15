@@ -16,7 +16,7 @@ describe('Deck Building & Dealing', () => {
     expect(deck.some((c) => c.isJoker)).toBe(false);
   });
 
-  it('creates a single deck with 2 external jokers (54 cards)', () => {
+  it('creates a single deck with 2 printed jokers (54 cards)', () => {
     const deck = createDeck('single', true);
     expect(deck).toHaveLength(54);
     const jokers = deck.filter((c) => c.isJoker);
@@ -31,7 +31,7 @@ describe('Deck Building & Dealing', () => {
     expect(ids.size).toBe(104);
   });
 
-  it('creates a double deck with 4 external jokers (108 cards)', () => {
+  it('creates a double deck with 4 printed jokers (108 cards)', () => {
     const deck = createDeck('double', true);
     expect(deck).toHaveLength(108);
     const jokers = deck.filter((c) => c.isJoker);

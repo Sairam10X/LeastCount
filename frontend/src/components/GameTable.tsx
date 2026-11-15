@@ -5,6 +5,7 @@ import { ArrowDownToLine, RotateCcw, Zap } from 'lucide-react';
 
 interface GameTableProps {
   stockCount: number;
+  cutJoker?: CardType | null;
   discardTop: CardType | null;
   lastDiscard: LastDiscard | null;
   availablePickupCards: CardType[] | null;
@@ -22,6 +23,7 @@ interface GameTableProps {
 
 export const GameTable: React.FC<GameTableProps> = ({
   stockCount,
+  cutJoker,
   discardTop,
   lastDiscard,
   availablePickupCards,
@@ -79,8 +81,8 @@ export const GameTable: React.FC<GameTableProps> = ({
         </div>
       )}
 
-      {/* Table Felt Card Center (Stock & Discard - Always Side-by-Side) */}
-      <div className="w-full max-w-lg bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-2.5 sm:p-4 shadow-inner flex flex-row items-center justify-center gap-6 sm:gap-14 backdrop-blur-sm">
+      {/* Table Felt Card Center (Stock, Cut Joker & Discard) */}
+      <div className="w-full max-w-lg bg-emerald-950/40 border border-emerald-800/40 rounded-2xl p-2.5 sm:p-4 shadow-inner flex flex-row items-center justify-center gap-4 sm:gap-10 backdrop-blur-sm">
         {/* 1. PICKING DECK (STOCK PILE) */}
         <div className="flex flex-col items-center">
           <div className="relative group">
@@ -129,12 +131,35 @@ export const GameTable: React.FC<GameTableProps> = ({
           )}
         </div>
 
-        {/* 2. DISCARD DECK */}
+        {/* 2. EXTERNAL CUT JOKER (If active) */}
+        {cutJoker && (
+          <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+            <div className="relative group ring-2 ring-amber-400/80 rounded-lg shadow-lg shadow-amber-500/20">
+              <Card card={cutJoker} size="sm" isWildcardJoker />
+            </div>
+            <span className="mt-1 text-[11px] font-black text-amber-300 tracking-tight flex items-center gap-0.5">
+              <span>★ All {cutJoker.rank}'s = 0</span>
+            </span>
+            <span className="text-[9px] text-amber-400/80 uppercase font-bold tracking-wider">
+              Cut Joker
+            </span>
+          </div>
+        )}
+
+        {/* 3. DISCARD DECK */}
         <div className="flex flex-col items-center">
           <div className="relative">
             {discardTop ? (
               <div className="relative">
-                <Card card={discardTop} size="sm" />
+                <Card
+                  card={discardTop}
+                  size="sm"
+                  isWildcardJoker={Boolean(
+                    (cutJoker && discardTop.rank === cutJoker.rank) ||
+                    discardTop.isJoker ||
+                    discardTop.rank === 'JOKER'
+                  )}
+                />
               </div>
             ) : (
               <div className="w-12 h-18 sm:w-16 sm:h-24 rounded-lg border-2 border-dashed border-slate-700 flex items-center justify-center text-xs text-slate-500">

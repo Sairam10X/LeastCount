@@ -10,6 +10,7 @@ interface CardProps {
   disabled?: boolean;
   size?: 'sm' | 'md' | 'lg';
   scoreValue?: number;
+  isWildcardJoker?: boolean;
   onClick?: () => void;
   className?: string;
 }
@@ -22,6 +23,7 @@ export const Card: React.FC<CardProps> = ({
   disabled = false,
   size = 'md',
   scoreValue,
+  isWildcardJoker = false,
   onClick,
   className = '',
 }) => {
@@ -133,6 +135,14 @@ export const Card: React.FC<CardProps> = ({
         </span>
         <span className="text-[10px] sm:text-xs">{suitSymbol(card.suit)}</span>
       </div>
+
+      {/* External Cut Joker Badge */}
+      {isWildcardJoker && !isJoker && (
+        <div className="absolute top-1 right-1 bg-amber-500 text-slate-950 text-[8px] sm:text-[9px] font-black px-1 py-0.2 rounded shadow uppercase tracking-tight leading-none flex items-center space-x-0.5">
+          <span>★</span>
+          <span>0</span>
+        </div>
+      )}
 
       {/* Optional Score Value Pill */}
       {scoreValue !== undefined && (

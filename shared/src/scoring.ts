@@ -7,8 +7,18 @@ import {
   RoundResult,
 } from './types';
 
-export function getCardValue(card: Card, settings: GameSettings): number {
+export function isCardJoker(card: Card, settings?: GameSettings, cutJoker?: Card | null): boolean {
   if (card.isJoker || card.suit === 'JOKER' || card.rank === 'JOKER') {
+    return true;
+  }
+  if (settings?.externalJokers && cutJoker && card.rank === cutJoker.rank) {
+    return true;
+  }
+  return false;
+}
+
+export function getCardValue(card: Card, settings: GameSettings, cutJoker?: Card | null): number {
+  if (isCardJoker(card, settings, cutJoker)) {
     return 0;
   }
 
@@ -37,11 +47,12 @@ export function getCardValue(card: Card, settings: GameSettings): number {
 
 export function calculateHandDetails(
   hand: Card[],
-  settings: GameSettings
+  settings: GameSettings,
+  cutJoker?: Card | null
 ): { details: CardScoringDetail[]; total: number } {
   let total = 0;
   const details: CardScoringDetail[] = hand.map((card) => {
-    const value = getCardValue(card, settings);
+    const value = getCardValue(card, settings, cutJoker);
     total += value;
     return { card, value };
   });
@@ -49,8 +60,8 @@ export function calculateHandDetails(
   return { details, total };
 }
 
-export function calculateHandTotal(hand: Card[], settings: GameSettings): number {
-  return hand.reduce((sum, card) => sum + getCardValue(card, settings), 0);
+export function calculateHandTotal(hand: Card[], settings: GameSettings, cutJoker?: Card | null): number {
+  return hand.reduce((sum, card) => sum + getCardValue(card, settings, cutJoker), 0);
 }
 
 export interface PlayerForScoring {
@@ -76,13 +87,14 @@ export function resolveShow(
   callerId: string,
   players: PlayerForScoring[],
   settings: GameSettings,
-  roundNumber: number
+  roundNumber: number,
+  cutJoker?: Card | null
 ): RoundResult {
   const activePlayers = players.filter((p) => !p.isEliminated);
 
   // Compute hand totals for all active players
   const playerHandDetails = activePlayers.map((player) => {
-    const { details, total } = calculateHandDetails(player.hand, settings);
+    const { details, total } = calculateHandDetails(player.hand, settings, cutJoker);
     return {
       player,
       details,

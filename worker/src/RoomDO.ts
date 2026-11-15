@@ -12,6 +12,7 @@ import {
   dealCards,
   getNextTurnPlayerId,
   getPersonalizedState,
+  isCardJoker,
   reshuffleStockIfNeeded,
   resolveShow,
   shuffleDeck,
@@ -48,6 +49,9 @@ export class RoomDO extends DurableObject<Env> {
       if (!this.state.availablePickupCards) {
         this.state.availablePickupCards = null;
       }
+      if (this.state.cutJoker === undefined) {
+        this.state.cutJoker = null;
+      }
       this.ensureHostAssigned();
     } else {
       this.state = {
@@ -64,6 +68,7 @@ export class RoomDO extends DurableObject<Env> {
         hands: {},
         stock: [],
         discardPile: [],
+        cutJoker: null,
         lastDiscard: null,
         availablePickupCards: null,
         roundResults: null,
@@ -527,6 +532,7 @@ export class RoomDO extends DurableObject<Env> {
     this.state.hands = {};
     this.state.stock = [];
     this.state.discardPile = [];
+    this.state.cutJoker = null;
     this.state.lastDiscard = null;
     this.state.currentTurnPlayerId = null;
     this.state.turnPhase = 'action';
@@ -557,7 +563,7 @@ export class RoomDO extends DurableObject<Env> {
     }
 
     // Build and shuffle deck
-    const deck = createDeck(this.state.settings.deckMode, this.state.settings.externalJokers);
+    const deck = createDeck(this.state.settings.deckMode, this.state.settings.printedJokers);
     const shuffled = shuffleDeck(deck);
 
     // Deal 5 cards each
@@ -573,6 +579,29 @@ export class RoomDO extends DurableObject<Env> {
     this.state.lastDiscard = discardPile.length > 0
       ? { playerId: 'system', playerName: 'Deck', cards: [discardPile[0]] }
       : null;
+
+    // External cut joker: pick a random card from stock as the wildcard
+    if (this.state.settings.externalJokers) {
+      // Find a standard (non-printed joker) card if possible
+      let cutIndex = this.state.stock.findIndex((c) => !c.isJoker && c.rank !== 'JOKER');
+      if (cutIndex === -1 && this.state.stock.length > 0) {
+        cutIndex = 0;
+      }
+      if (cutIndex !== -1) {
+        const [cutCard] = this.state.stock.splice(cutIndex, 1);
+        this.state.cutJoker = cutCard;
+        const suitSymbol = cutCard.suit === 'H' ? '♥' : cutCard.suit === 'D' ? '♦' : cutCard.suit === 'C' ? '♣' : '♠';
+        this.addLog(
+          `🃏 EXTERNAL JOKER: [${cutCard.rank}${suitSymbol}] — All ${cutCard.rank}'s count as 0 PTS and match any discard level!`,
+          'system'
+        );
+      } else {
+        this.state.cutJoker = null;
+      }
+    } else {
+      this.state.cutJoker = null;
+    }
+
     this.state.roundResults = null;
     this.state.status = 'playing';
 
@@ -654,20 +683,20 @@ export class RoomDO extends DurableObject<Env> {
     };
 
     // Check if the discarded card matches the same level of the discard pile
-    // Supports external jokers matching any level
-    const isJokerDiscard = discarded[0].rank === 'JOKER' || Boolean(discarded[0].isJoker);
-    const isTopJoker = topCardBefore !== null && (topCardBefore.rank === 'JOKER' || Boolean(topCardBefore.isJoker));
+    // Supports external cut jokers & printed jokers matching any level
+    const isDiscardJoker = isCardJoker(discarded[0], this.state.settings, this.state.cutJoker);
+    const isTopJoker = topCardBefore !== null && isCardJoker(topCardBefore, this.state.settings, this.state.cutJoker);
     const isRankMatch = topCardBefore !== null && discarded[0].rank === topCardBefore.rank;
-    const isLevelMatch = isRankMatch || (this.state.settings.externalJokers && (isJokerDiscard || isTopJoker));
+    const isLevelMatch = isRankMatch || isDiscardJoker || isTopJoker;
     const cardNames = discarded.map((c) => `${c.rank}${c.suit === 'JOKER' ? '★' : c.suit}`).join(' ');
 
     if (isLevelMatch) {
       // LEVEL MATCH: Player need NOT pick any card! Turn is complete!
       this.state.availablePickupCards = null;
-      const matchReason = isJokerDiscard
-        ? 'with External Joker (Wild Level Match)'
+      const matchReason = isDiscardJoker
+        ? 'with Joker (Wild Level Match)'
         : isTopJoker
-        ? 'on External Joker (Wild Level Match)'
+        ? 'on Joker (Wild Level Match)'
         : `matching rank ${topCardBefore?.rank}`;
 
       this.addLog(
@@ -801,7 +830,7 @@ export class RoomDO extends DurableObject<Env> {
     }
 
     const hand = this.state.hands[player.id] || [];
-    const validation = validateShow(hand, this.state.settings, this.state.turnPhase);
+    const validation = validateShow(hand, this.state.settings, this.state.turnPhase, this.state.cutJoker);
     if (!validation.valid) {
       this.sendError(ws, validation.error || 'Cannot call Show.');
       return;
@@ -822,7 +851,8 @@ export class RoomDO extends DurableObject<Env> {
       player.id,
       playersForScoring,
       this.state.settings,
-      this.state.roundNumber
+      this.state.roundNumber,
+      this.state.cutJoker
     );
 
     // Update player scores
@@ -895,7 +925,8 @@ export class RoomDO extends DurableObject<Env> {
       hand,
       cardIds,
       topDiscard,
-      this.state.settings.externalJokers
+      this.state.settings,
+      this.state.cutJoker
     );
     if (!validation.valid || !validation.cards) {
       this.sendError(ws, validation.error || 'Cannot quick match discard.');
@@ -934,7 +965,7 @@ export class RoomDO extends DurableObject<Env> {
     if (this.state.turnPhase === 'action') {
       if (hand.length > 0) {
         // Discard highest value card
-        const cardToDiscard = chooseAutoDiscard(hand, this.state.settings);
+        const cardToDiscard = chooseAutoDiscard(hand, this.state.settings, this.state.cutJoker);
         const topCardBefore =
           this.state.discardPile.length > 0
             ? this.state.discardPile[this.state.discardPile.length - 1]
@@ -948,7 +979,9 @@ export class RoomDO extends DurableObject<Env> {
           cards: [cardToDiscard],
         };
 
-        const isMatch = topCardBefore && cardToDiscard.rank === topCardBefore.rank;
+        const isCardJ = isCardJoker(cardToDiscard, this.state.settings, this.state.cutJoker);
+        const isTopJ = topCardBefore && isCardJoker(topCardBefore, this.state.settings, this.state.cutJoker);
+        const isMatch = topCardBefore && (cardToDiscard.rank === topCardBefore.rank || isCardJ || isTopJ);
         if (!isMatch) {
           // If no match, auto-draw from stock
           const reshuffleResult = reshuffleStockIfNeeded(

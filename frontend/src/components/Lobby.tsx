@@ -337,11 +337,28 @@ export const Lobby: React.FC<LobbyProps> = ({
             </select>
           </div>
 
-          {/* 3. External Jokers */}
+          {/* 3. Printed Jokers */}
           <div className="flex items-center justify-between gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-200">External Jokers</label>
-              <p className="text-[11px] text-slate-400">2 per deck (0 pts) • Same level wild discard</p>
+              <label className="text-xs font-semibold text-slate-200">Printed Jokers</label>
+              <p className="text-[11px] text-slate-400">2 clown jokers per deck (worth 0 pts)</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleSettingChange({ printedJokers: !localSettings.printedJokers })}
+              className={`w-12 h-6 rounded-full transition-colors p-0.5 flex items-center cursor-pointer ${
+                localSettings.printedJokers ? 'bg-emerald-600 justify-end' : 'bg-slate-700 justify-start'
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-md block"></span>
+            </button>
+          </div>
+
+          {/* 4. External Jokers (Cut Card) */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-200">External Jokers (Cut Card)</label>
+              <p className="text-[11px] text-slate-400">Random cut card per round; all matching ranks = 0 pts & wild match</p>
             </div>
             <button
               type="button"
@@ -354,7 +371,7 @@ export const Lobby: React.FC<LobbyProps> = ({
             </button>
           </div>
 
-          {/* 4. Face Card Values */}
+          {/* 5. Face Card Values */}
           <div className="flex items-center justify-between gap-4">
             <div>
               <label className="text-xs font-semibold text-slate-200">Face Card Values</label>

@@ -47,6 +47,27 @@ describe('Card Scoring Values', () => {
     expect(getCardValue(joker, DEFAULT_SETTINGS)).toBe(0);
   });
 
+  it('evaluates external cut joker cards as 0 points across all suits', () => {
+    const cutJoker: Card = { id: 'cut-1', suit: 'H', rank: '6' };
+    const settingsWithExternal: GameSettings = { ...DEFAULT_SETTINGS, externalJokers: true };
+
+    const sixSpades: Card = { id: 's6', suit: 'S', rank: '6' };
+    const sixDiamonds: Card = { id: 'd6', suit: 'D', rank: '6' };
+    const sixClubs: Card = { id: 'c6', suit: 'C', rank: '6' };
+    const eightHearts: Card = { id: 'h8', suit: 'H', rank: '8' };
+
+    // When external jokers are enabled and cut card is 6, all 6s must be 0 points
+    expect(getCardValue(sixSpades, settingsWithExternal, cutJoker)).toBe(0);
+    expect(getCardValue(sixDiamonds, settingsWithExternal, cutJoker)).toBe(0);
+    expect(getCardValue(sixClubs, settingsWithExternal, cutJoker)).toBe(0);
+    // Non-matching ranks retain regular values
+    expect(getCardValue(eightHearts, settingsWithExternal, cutJoker)).toBe(8);
+
+    // In a hand with 6s and an 8: 0 + 0 + 8 = 8
+    const hand: Card[] = [sixSpades, sixDiamonds, eightHearts];
+    expect(calculateHandTotal(hand, settingsWithExternal, cutJoker)).toBe(8);
+  });
+
   it('calculates hand total correctly', () => {
     const hand: Card[] = [
       { id: '1', suit: 'H', rank: '2' },

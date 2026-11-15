@@ -3,7 +3,7 @@ import { Card, DeckMode, Rank, Suit } from './types';
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 const RANKS: Rank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
-export function createDeck(deckMode: DeckMode = 'single', externalJokers = false): Card[] {
+export function createDeck(deckMode: DeckMode = 'single', printedJokers = false): Card[] {
   const deckCount = deckMode === 'double' ? 2 : 1;
   const cards: Card[] = [];
 
@@ -19,7 +19,7 @@ export function createDeck(deckMode: DeckMode = 'single', externalJokers = false
       }
     }
 
-    if (externalJokers) {
+    if (printedJokers) {
       cards.push({
         id: `${d}-JOKER-1`,
         suit: 'JOKER',

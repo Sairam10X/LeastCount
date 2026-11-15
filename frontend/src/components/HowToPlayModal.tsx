@@ -54,7 +54,10 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
               <strong>{settings.faceCardValue === 'ten' ? '10 pts' : 'Actual (11, 12, 13)'}</strong>
             </div>
             <div>
-              • External Jokers: <strong>{settings.externalJokers ? 'Enabled (0 pts & Wild Match)' : 'None'}</strong>
+              • Printed Jokers: <strong>{settings.printedJokers ? '2 per deck (0 pts)' : 'None'}</strong>
+            </div>
+            <div>
+              • External Jokers: <strong>{settings.externalJokers ? 'Cut Card (All matching ranks = 0 pts & Wild)' : 'None'}</strong>
             </div>
             <div>
               • Match Target:{' '}
@@ -78,11 +81,26 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
           </div>
 
           <div>
-            <h4 className="font-bold text-emerald-400 mb-1">2. Each Turn</h4>
+            <h4 className="font-bold text-emerald-400 mb-1">2. Jokers (Printed & External Cut)</h4>
+            <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
+              <li>
+                <strong>Printed Jokers:</strong> Physical clown jokers in the deck (2 per deck) worth <strong>0 points</strong>.
+              </li>
+              <li>
+                <strong>External Jokers:</strong> A random card is cut at the start of the round (e.g. 6♦). <strong>All cards of that rank across all suits (6♠, 6♥, 6♦, 6♣) become Jokers worth 0 points!</strong>
+              </li>
+              <li>
+                <strong>Wildcard Same Level Match:</strong> Any joker (printed or external cut) matches any discard level, allowing you to discard without drawing a card!
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-emerald-400 mb-1">3. Each Turn</h4>
             <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
               <li>
                 <strong>Step 1 - Discard & Same Level Rule:</strong> Throw 1 card (or a set of same rank) onto the discard pile.
-                If your card is of the <em>same level</em> as the top card on the discard pile, or if an <em>External Joker</em> is played,
+                If your card is of the <em>same level</em> as the top card on the discard pile, or if a <em>Joker (Printed or External)</em> is played,
                 your turn completes immediately without drawing a card!
               </li>
               <li>
