@@ -85,10 +85,10 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
 
   return (
     <div className="w-full flex flex-col items-center pb-2 pt-1 select-none relative">
-      {/* Real-time Message Bubble for Self */}
+      {/* Real-time Message Bubble for Self - Displayed inwards towards the table (above player hand) */}
       {chatMessage && (
-        <div className="absolute -top-10 z-40 max-w-[220px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none">
-          <div className="truncate text-center">{chatMessage}</div>
+        <div className="absolute -top-12 z-50 max-w-[220px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none whitespace-normal text-center leading-snug">
+          <div>{chatMessage}</div>
           <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-white"></div>
         </div>
       )}
