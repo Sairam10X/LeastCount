@@ -48,3 +48,18 @@
   background: radial-gradient(ellipse at center, #386641 0%, #25442b 70%, #132417 100%);
 }
 
+/* Virtual Landscape Mode for Mobile Devices in Portrait */
+.mobile-landscape-active {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vh !important;
+  width: 100dvh !important;
+  height: 100vw !important;
+  height: 100dvw !important;
+  transform: rotate(90deg) translateY(-100%);
+  transform-origin: top left;
+  overflow: hidden !important;
+  z-index: 999;
+}
+

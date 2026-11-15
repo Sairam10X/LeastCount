@@ -99,6 +99,7 @@ export interface PlayerRoundResult {
 export interface RoundResult {
   roundNumber: number;
   callerId: string;
+  cutJoker?: Card | null;
   isSuccessfulShow: boolean;
   lowestTotal: number;
   playerResults: PlayerRoundResult[];

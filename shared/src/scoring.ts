@@ -202,6 +202,7 @@ export function resolveShow(
   return {
     roundNumber,
     callerId,
+    cutJoker: cutJoker || null,
     isSuccessfulShow,
     lowestTotal: lowestTotalOverall,
     playerResults,

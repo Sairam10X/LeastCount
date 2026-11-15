@@ -18,7 +18,9 @@ import {
   LogOut,
   Moon,
   PlusCircle,
+  RotateCw,
   ScrollText,
+  Smartphone,
   Sun,
   Volume2,
   VolumeX,
@@ -50,6 +52,53 @@ export function App() {
   const [showHowToPlay, setShowHowToPlay] = useState<boolean>(false);
   const [showActivityLog, setShowActivityLog] = useState<boolean>(false);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const [isLandscapeMode, setIsLandscapeMode] = useState<boolean>(false);
+  const [isMobilePortrait, setIsMobilePortrait] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+  });
+
+  useEffect(() => {
+    const handleOrientation = () => {
+      const isPortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+      setIsMobilePortrait(isPortrait);
+      if (!isPortrait) {
+        setIsLandscapeMode(false);
+      }
+    };
+    window.addEventListener('resize', handleOrientation);
+    window.addEventListener('orientationchange', handleOrientation);
+    return () => {
+      window.removeEventListener('resize', handleOrientation);
+      window.removeEventListener('orientationchange', handleOrientation);
+    };
+  }, []);
+
+  const toggleLandscapeMode = async () => {
+    if (!isLandscapeMode) {
+      try {
+        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        }
+        if (screen.orientation && 'lock' in screen.orientation) {
+          await (screen.orientation as any).lock('landscape');
+        }
+      } catch {
+        // Fallback to CSS virtual landscape
+      }
+      setIsLandscapeMode(true);
+    } else {
+      try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+        if (screen.orientation && 'unlock' in screen.orientation) {
+          (screen.orientation as any).unlock();
+        }
+      } catch {}
+      setIsLandscapeMode(false);
+    }
+  };
 
   // Sound effects
   const sound = useSound();
@@ -194,29 +243,43 @@ export function App() {
   return (
     <div
       className={`h-[100dvh] max-h-[100dvh] w-full flex flex-col overflow-hidden transition-colors duration-300 ${
+        isLandscapeMode && isMobilePortrait ? 'mobile-landscape-active' : ''
+      } ${
         theme === 'dark' ? 'table-felt text-slate-100' : 'table-felt-light text-slate-900'
       }`}
     >
+      {/* Floating Exit Landscape Pill when Virtual Landscape is active */}
+      {isLandscapeMode && isMobilePortrait && (
+        <button
+          onClick={toggleLandscapeMode}
+          className="fixed top-2 right-2 z-50 bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-400/50 rounded-full px-3 py-1 shadow-2xl text-xs font-bold flex items-center space-x-1 backdrop-blur"
+          title="Exit Landscape mode"
+        >
+          <RotateCw className="w-3.5 h-3.5 animate-spin" />
+          <span>Exit Landscape</span>
+        </button>
+      )}
+
       {/* HEADER NAVBAR */}
-      <header className="w-full px-2.5 py-1.5 sm:px-6 sm:py-2 bg-slate-950/80 backdrop-blur border-b border-slate-800/80 flex items-center justify-between z-30 flex-shrink-0">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-white shadow-md">
+      <header className="w-full px-2.5 py-1 sm:px-6 sm:py-2 bg-slate-950/80 backdrop-blur border-b border-slate-800/80 flex items-center justify-between z-30 flex-shrink-0">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-white shadow-md text-sm">
             LC
           </div>
-          <span className="font-black text-base sm:text-lg tracking-wide bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+          <span className="font-black text-sm sm:text-lg tracking-wide bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
             Least Count
           </span>
           {roomCode && (
-            <span className="ml-2 font-mono font-bold text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">
+            <span className="ml-1 sm:ml-2 font-mono font-bold text-[11px] sm:text-xs bg-slate-800 text-emerald-400 px-1.5 sm:px-2 py-0.5 rounded border border-slate-700">
               {roomCode}
             </span>
           )}
           {gameState && gameState.status === 'playing' && (
-            <div className="ml-2 flex items-center space-x-1.5 text-xs">
+            <div className="ml-1 sm:ml-2 flex items-center space-x-1 sm:space-x-1.5 text-xs">
               <span className="hidden sm:inline bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
                 R{gameState.roundNumber}
               </span>
-              <span className="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/40">
+              <span className="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/40 text-[11px] sm:text-xs">
                 Your Score: {myPlayer?.score ?? 0}
                 {!gameState.settings.singleRoundMode && (
                   <span className="text-amber-400/80 font-normal ml-0.5">/ {gameState.settings.gameTargetScore}</span>
@@ -226,7 +289,21 @@ export function App() {
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* Landscape Orientation Toggle (Desktop & Mobile) */}
+          <button
+            onClick={toggleLandscapeMode}
+            className={`p-1.5 rounded-lg border transition flex items-center space-x-1 text-xs font-semibold ${
+              isLandscapeMode
+                ? 'bg-emerald-600 text-white border-emerald-400 ring-2 ring-emerald-400/50 shadow-md'
+                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+            }`}
+            title={isLandscapeMode ? 'Exit Landscape Mode' : 'Landscape Mode (Rotate Table for Mobile)'}
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isLandscapeMode ? 'text-white' : 'text-emerald-400'}`} />
+            <span className="hidden md:inline">Landscape</span>
+          </button>
+
           {/* Sound Toggle */}
           <button
             onClick={sound.toggleMute}
@@ -420,6 +497,23 @@ export function App() {
         ) : (
           /* GAMEPLAY TABLE VIEW (STRICTLY NO SCROLL, 100% VIEWPORT FIT) */
           <div className="flex-1 h-full max-h-full flex flex-col justify-between p-1 sm:p-2.5 overflow-hidden min-h-0">
+            {/* Mobile Portrait Landscape Suggestion Pill */}
+            {isMobilePortrait && !isLandscapeMode && (
+              <div className="w-full max-w-lg mx-auto mb-1 px-3 py-1 bg-gradient-to-r from-emerald-950/95 via-teal-950/90 to-slate-900/95 border border-emerald-500/60 rounded-xl shadow-lg flex items-center justify-between text-xs text-emerald-200 flex-shrink-0 z-20">
+                <div className="flex items-center space-x-1.5 truncate">
+                  <span className="text-sm">📱</span>
+                  <span className="truncate">Tip: Switch to <strong>Landscape</strong> for wide table view</span>
+                </div>
+                <button
+                  onClick={toggleLandscapeMode}
+                  className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[10px] sm:text-xs px-2.5 py-0.5 rounded-lg border border-emerald-400 shadow cursor-pointer whitespace-nowrap ml-2 flex items-center space-x-1 flex-shrink-0"
+                >
+                  <RotateCw className="w-3 h-3" />
+                  <span>Switch</span>
+                </button>
+              </div>
+            )}
+
             {/* Top Opponents Row - Ultra Compact & Scrollable horizontally if many opponents */}
             <div className="w-full max-w-4xl mx-auto flex items-center justify-center gap-1.5 sm:gap-2.5 py-0.5 flex-shrink-0 overflow-x-auto no-scrollbar">
               {opponents.map((opp) => (
@@ -495,6 +589,8 @@ export function App() {
           status={gameState.status}
           roundResults={gameState.roundResults}
           gameWinnerId={gameState.gameWinnerId}
+          cutJoker={gameState.cutJoker}
+          settings={gameState.settings}
           isHost={gameState.isHost}
           onNextRound={nextRound}
           onRestartGame={restartGame}
