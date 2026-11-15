@@ -154,7 +154,8 @@ export function validateShow(
     };
   }
 
-  if (handTotal > settings.showLimit) {
+  // If showLimit is 0 or less, there is No Limit (any hand total can declare show)
+  if (settings.showLimit > 0 && handTotal > settings.showLimit) {
     return {
       valid: false,
       error: `Your hand total (${handTotal}) exceeds the show limit (${settings.showLimit}).`,
@@ -236,7 +237,7 @@ export function getPersonalizedState(
   const canShow =
     isMyTurn &&
     state.turnPhase === 'action' &&
-    myHandTotal <= state.settings.showLimit;
+    (state.settings.showLimit <= 0 || myHandTotal <= state.settings.showLimit);
 
   const canDiscard = isMyTurn && state.turnPhase === 'action';
   const canDraw = isMyTurn && state.turnPhase === 'draw';

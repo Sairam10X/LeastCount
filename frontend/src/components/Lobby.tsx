@@ -41,9 +41,16 @@ export const Lobby: React.FC<LobbyProps> = ({
 
   // Local optimistic state so dropdowns change instantly on click
   const [localSettings, setLocalSettings] = useState<GameSettings>(settings);
+  const presetTargets = [50, 100, 150, 200];
+  const [isCustomTarget, setIsCustomTarget] = useState<boolean>(
+    () => !settings.singleRoundMode && !presetTargets.includes(settings.gameTargetScore)
+  );
 
   useEffect(() => {
     setLocalSettings(settings);
+    if (!settings.singleRoundMode && !presetTargets.includes(settings.gameTargetScore)) {
+      setIsCustomTarget(true);
+    }
   }, [settings]);
 
   const handleSettingChange = (partial: Partial<GameSettings>) => {
@@ -334,11 +341,17 @@ export const Lobby: React.FC<LobbyProps> = ({
               onChange={(e) => handleSettingChange({ showLimit: Number(e.target.value) })}
               className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
             >
-              {[5, 7, 10, 12, 15, 20].map((v) => (
-                <option key={v} value={v} className="bg-slate-900 text-white py-1.5">
-                  ≤ {v} Points
-                </option>
-              ))}
+              <option value={0} className="bg-slate-900 text-amber-300 font-bold py-1.5">
+                No Limit (Any Hand)
+              </option>
+              <option value={5} className="bg-slate-900 text-white py-1.5">≤ 5 Points</option>
+              <option value={7} className="bg-slate-900 text-white py-1.5">≤ 7 Points</option>
+              <option value={10} className="bg-slate-900 text-white py-1.5">≤ 10 Points (Default)</option>
+              <option value={12} className="bg-slate-900 text-white py-1.5">≤ 12 Points</option>
+              <option value={15} className="bg-slate-900 text-white py-1.5">≤ 15 Points</option>
+              <option value={20} className="bg-slate-900 text-white py-1.5">≤ 20 Points</option>
+              <option value={25} className="bg-slate-900 text-white py-1.5">≤ 25 Points</option>
+              <option value={30} className="bg-slate-900 text-white py-1.5">≤ 30 Points</option>
             </select>
           </div>
 
@@ -362,30 +375,94 @@ export const Lobby: React.FC<LobbyProps> = ({
           </div>
 
           {/* 8. Target Score & Single Round Mode */}
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <label className="text-xs font-semibold text-slate-200">Game Mode / Target</label>
-              <p className="text-[11px] text-slate-400">Elimination target or single round</p>
-            </div>
-            <select
-              value={localSettings.singleRoundMode ? 'single' : String(localSettings.gameTargetScore)}
-              onChange={(e) => {
-                if (e.target.value === 'single') {
-                  handleSettingChange({ singleRoundMode: true });
-                } else {
-                  handleSettingChange({
-                    singleRoundMode: false,
-                    gameTargetScore: Number(e.target.value),
-                  });
+          <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/50 space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-200">Game Mode / Target</label>
+                <p className="text-[11px] text-slate-400">Elimination target or single round</p>
+              </div>
+              <select
+                value={
+                  localSettings.singleRoundMode
+                    ? 'single'
+                    : isCustomTarget
+                    ? 'custom'
+                    : String(localSettings.gameTargetScore)
                 }
-              }}
-              className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
-            >
-              <option value="50" className="bg-slate-900 text-white py-1.5">Target 50 Pts</option>
-              <option value="100" className="bg-slate-900 text-white py-1.5">Target 100 Pts (Default)</option>
-              <option value="150" className="bg-slate-900 text-white py-1.5">Target 150 Pts</option>
-              <option value="single" className="bg-slate-900 text-white py-1.5">Single Round Mode</option>
-            </select>
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === 'single') {
+                    setIsCustomTarget(false);
+                    handleSettingChange({ singleRoundMode: true });
+                  } else if (val === 'custom') {
+                    setIsCustomTarget(true);
+                    handleSettingChange({
+                      singleRoundMode: false,
+                      gameTargetScore: localSettings.gameTargetScore || 75,
+                    });
+                  } else {
+                    setIsCustomTarget(false);
+                    handleSettingChange({
+                      singleRoundMode: false,
+                      gameTargetScore: Number(val),
+                    });
+                  }
+                }}
+                className="bg-slate-800 hover:bg-slate-750 text-white border border-slate-600 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer outline-none"
+              >
+                <option value="50" className="bg-slate-900 text-white py-1.5">Target 50 Pts</option>
+                <option value="100" className="bg-slate-900 text-white py-1.5">Target 100 Pts (Default)</option>
+                <option value="150" className="bg-slate-900 text-white py-1.5">Target 150 Pts</option>
+                <option value="200" className="bg-slate-900 text-white py-1.5">Target 200 Pts</option>
+                <option value="custom" className="bg-slate-900 text-emerald-400 font-semibold py-1.5">Custom Target...</option>
+                <option value="single" className="bg-slate-900 text-white py-1.5">Single Round Mode</option>
+              </select>
+            </div>
+
+            {/* Custom Target Score Input */}
+            {!localSettings.singleRoundMode && (isCustomTarget || !presetTargets.includes(localSettings.gameTargetScore)) && (
+              <div className="flex items-center justify-between pt-1 border-t border-slate-700/60 animate-in fade-in duration-200">
+                <span className="text-xs text-slate-300 font-medium">Custom Elimination Target:</span>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(10, (localSettings.gameTargetScore || 100) - 10);
+                      handleSettingChange({ gameTargetScore: next });
+                    }}
+                    className="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs flex items-center justify-center transition cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min={10}
+                    max={1000}
+                    step={5}
+                    value={localSettings.gameTargetScore}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      if (!isNaN(val)) {
+                        handleSettingChange({ gameTargetScore: Math.max(1, Math.min(1000, val)) });
+                      }
+                    }}
+                    className="w-20 bg-slate-900 border border-emerald-500/80 rounded px-2 py-1 text-xs text-center font-mono font-bold text-white focus:ring-2 focus:ring-emerald-400 outline-none"
+                    placeholder="e.g. 75"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.min(1000, (localSettings.gameTargetScore || 100) + 10);
+                      handleSettingChange({ gameTargetScore: next });
+                    }}
+                    className="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs flex items-center justify-center transition cursor-pointer"
+                  >
+                    +
+                  </button>
+                  <span className="text-xs text-slate-400 font-semibold">pts</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 9. Quick Match / Slap Bonus */}

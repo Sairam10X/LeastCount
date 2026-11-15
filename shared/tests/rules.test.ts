@@ -116,6 +116,11 @@ describe('Rules Engine Validations', () => {
     const invalidShowPhase = validateShow(lowHand, DEFAULT_SETTINGS, 'draw');
     expect(invalidShowPhase.valid).toBe(false);
     expect(invalidShowPhase.error).toMatch(/start of your turn/i);
+
+    // No limit option (showLimit = 0) allows any hand total to call show
+    const noLimitSettings = { ...DEFAULT_SETTINGS, showLimit: 0 };
+    const validNoLimitShow = validateShow(highHand, noLimitSettings, 'action');
+    expect(validNoLimitShow.valid).toBe(true);
   });
 
   it('chooses the highest card for auto discard', () => {

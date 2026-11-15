@@ -59,8 +59,11 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
     return selectionValidation.rank === discardTop.rank;
   }, [selectionValidation, selectedCardIds, discardTop]);
 
+  const hasShowLimit = settings.showLimit > 0;
+  const isWithinLimit = !hasShowLimit || handTotal <= settings.showLimit;
+
   const totalColor =
-    handTotal <= settings.showLimit
+    isWithinLimit
       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
       : handTotal <= 20
       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
@@ -78,7 +81,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
             <span>Total:</span>
             <span className="font-mono text-base">{handTotal}</span>
             <span className="text-[10px] opacity-75 font-normal">
-              (Limit: {settings.showLimit})
+              ({hasShowLimit ? `Limit: ≤ ${settings.showLimit}` : 'No Limit'})
             </span>
           </div>
 
@@ -141,7 +144,7 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
                 ? 'Can only call Show on your turn'
                 : turnPhase !== 'action'
                 ? 'Can only call Show before discarding'
-                : handTotal > settings.showLimit
+                : hasShowLimit && handTotal > settings.showLimit
                 ? `Hand total (${handTotal}) must be <= ${settings.showLimit} to call Show`
                 : 'Declare Show to end the round!'
             }

@@ -41,7 +41,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
           </span>
           <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
             <div>
-              • Show Limit: <strong>≤ {settings.showLimit} pts</strong>
+              • Show Limit: <strong>{settings.showLimit <= 0 ? 'No Limit (Any Sum)' : `≤ ${settings.showLimit} pts`}</strong>
             </div>
             <div>
               • Wrong Show Penalty: <strong>+{settings.wrongShowPenalty} pts</strong>
@@ -97,7 +97,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
             <ul className="list-disc list-inside space-y-1 text-slate-300 leading-relaxed">
               <li>
                 At the <strong>start of your turn</strong> (before discarding), if your total
-                points are ≤ {settings.showLimit}, you can press <strong>"SHOW"</strong>.
+                points are {settings.showLimit <= 0 ? 'any (No Limit)' : `≤ ${settings.showLimit}`}, you can press <strong>"SHOW"</strong>.
               </li>
               <li>
                 <strong>Successful Show:</strong> If you have the strictly lowest points, you score{' '}
