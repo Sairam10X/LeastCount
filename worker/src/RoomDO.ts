@@ -273,6 +273,9 @@ export class RoomDO extends DurableObject<Env> {
       case 'quick_match_discard':
         await this.handleQuickMatch(ws, player, msg.cardIds, msg.seq);
         break;
+      case 'chat':
+        await this.handleChat(ws, player, msg.message);
+        break;
       default:
         this.sendError(ws, 'Unknown command');
     }
@@ -977,7 +980,38 @@ export class RoomDO extends DurableObject<Env> {
     this.broadcastSync();
   }
 
+  private async handleChat(
+    ws: WebSocket,
+    player: PlayerInternal,
+    rawText: string
+  ): Promise<void> {
+    if (!rawText || !rawText.trim()) return;
+    const cleanText = rawText.trim().slice(0, 60);
+
+    const chatMsg: ServerMessage = {
+      type: 'chat_bubble',
+      playerId: player.id,
+      playerName: player.name,
+      message: cleanText,
+      timestamp: Date.now(),
+    };
+
+    this.broadcastMessage(chatMsg);
+    this.addLog(`${player.name}: "${cleanText}"`, 'chat');
+  }
+
   // --- Broadcasting & Synchronization ---
+
+  private broadcastMessage(msg: ServerMessage): void {
+    const raw = JSON.stringify(msg);
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.send(raw);
+      } catch {
+        // Socket closed
+      }
+    }
+  }
 
   private broadcastSync(): void {
     for (const ws of this.ctx.getWebSockets()) {

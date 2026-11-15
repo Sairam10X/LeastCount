@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card as CardType, GameSettings, TurnPhase } from 'shared';
 import { Card } from './Card';
-import { Check, Flame, Trophy, Zap } from 'lucide-react';
+import { Check, Flame, MessageSquare, Send, Trophy, Zap } from 'lucide-react';
 
 interface PlayerHandProps {
   hand: CardType[];
@@ -16,11 +16,15 @@ interface PlayerHandProps {
   canDiscard: boolean;
   discardTop: CardType | null;
   selectedCardIds: string[];
+  chatMessage?: string;
+  onSendChat?: (message: string) => void;
   onToggleSelectCard: (cardId: string) => void;
   onDiscard: () => void;
   onShow: () => void;
   isActionDisabled?: boolean;
 }
+
+const QUICK_CHATS = ['GG! 👏', 'Good luck! 🍀', 'Nice play! 🔥', 'Oops! 😅', 'Hurry up! ⏳', 'Show time! 🏆'];
 
 export const PlayerHand: React.FC<PlayerHandProps> = ({
   hand,
@@ -35,11 +39,15 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   canDiscard,
   discardTop,
   selectedCardIds,
+  chatMessage,
+  onSendChat,
   onToggleSelectCard,
   onDiscard,
   onShow,
   isActionDisabled = false,
 }) => {
+  const [showChatInput, setShowChatInput] = useState<boolean>(false);
+  const [customText, setCustomText] = useState<string>('');
   // Check if current selection has valid multi-discard (all same rank)
   const selectionValidation = useMemo(() => {
     if (selectedCardIds.length === 0) {
@@ -76,7 +84,15 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
       : 'bg-red-500/20 text-red-300 border-red-500/40';
 
   return (
-    <div className="w-full flex flex-col items-center pb-2 pt-1 select-none">
+    <div className="w-full flex flex-col items-center pb-2 pt-1 select-none relative">
+      {/* Real-time Message Bubble for Self */}
+      {chatMessage && (
+        <div className="absolute -top-10 z-40 max-w-[220px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none">
+          <div className="truncate text-center">{chatMessage}</div>
+          <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-white"></div>
+        </div>
+      )}
+
       {/* Hand Controls Bar */}
       <div className="w-full max-w-xl px-4 flex flex-wrap items-center justify-between gap-2 mb-2">
         {/* Badges: Self Score & Current Hand Total */}
@@ -172,8 +188,79 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
             <Trophy className="w-4 h-4" />
             <span>SHOW!</span>
           </button>
+
+          {/* Quick Chat Toggle */}
+          {onSendChat && (
+            <button
+              type="button"
+              onClick={() => setShowChatInput(!showChatInput)}
+              className={`p-1.5 rounded-lg border transition ${
+                showChatInput
+                  ? 'bg-indigo-600 text-white border-indigo-400'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-slate-700'
+              }`}
+              title="Send chat or reaction"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Quick Chat & Message Input Tray */}
+      {showChatInput && onSendChat && (
+        <div className="w-full max-w-xl px-4 mb-2 animate-in slide-in-from-bottom-2 fade-in duration-150">
+          <div className="bg-slate-900/95 border border-indigo-500/60 rounded-xl p-2.5 shadow-2xl backdrop-blur flex flex-col space-y-2">
+            {/* Quick reaction chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {QUICK_CHATS.map((qc) => (
+                <button
+                  key={qc}
+                  type="button"
+                  onClick={() => {
+                    onSendChat(qc);
+                    setShowChatInput(false);
+                  }}
+                  className="bg-slate-800 hover:bg-indigo-600 text-white text-xs px-2.5 py-1 rounded-lg border border-slate-700 hover:border-indigo-500 transition active:scale-95"
+                >
+                  {qc}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom message text input */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (customText.trim()) {
+                  onSendChat(customText.trim());
+                  setCustomText('');
+                  setShowChatInput(false);
+                }
+              }}
+              className="flex space-x-1.5 pt-1.5 border-t border-slate-800"
+            >
+              <input
+                type="text"
+                maxLength={60}
+                placeholder="Type a message..."
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!customText.trim()}
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center space-x-1 transition"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>Send</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Helpful Hint based on selection and top discard */}
       {isMyTurn && turnPhase === 'action' && selectedCardIds.length > 0 && (

@@ -5,8 +5,10 @@ import {
   Check,
   Copy,
   Crown,
+  MessageSquare,
   Play,
   QrCode,
+  Send,
   Settings as SettingsIcon,
   ShieldAlert,
   UserX,
@@ -19,6 +21,8 @@ interface LobbyProps {
   settings: GameSettings;
   isHost: boolean;
   myPlayerId: string | null;
+  chatBubbles?: Record<string, { message: string; timestamp: number }>;
+  onSendChat?: (message: string) => void;
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onStartGame: () => void;
   onKickPlayer: (playerId: string) => void;
@@ -31,6 +35,8 @@ export const Lobby: React.FC<LobbyProps> = ({
   settings,
   isHost,
   myPlayerId,
+  chatBubbles,
+  onSendChat,
   onUpdateSettings,
   onStartGame,
   onKickPlayer,
@@ -38,6 +44,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [lobbyChatText, setLobbyChatText] = useState('');
 
   // Local optimistic state so dropdowns change instantly on click
   const [localSettings, setLocalSettings] = useState<GameSettings>(settings);
@@ -169,6 +176,14 @@ export const Lobby: React.FC<LobbyProps> = ({
                         Spectator
                       </span>
                     )}
+
+                    {/* Speech / Message Bubble in Lobby */}
+                    {chatBubbles && chatBubbles[p.id] && (
+                      <div className="flex items-center space-x-1 bg-white text-slate-950 font-bold text-[11px] px-2 py-0.5 rounded-full shadow border border-indigo-400 animate-in zoom-in-95 fade-in duration-150">
+                        <span>💬</span>
+                        <span className="truncate max-w-[130px]">{chatBubbles[p.id].message}</span>
+                      </div>
+                    )}
                   </div>
 
                   {isHost && !p.isHost && (
@@ -184,6 +199,51 @@ export const Lobby: React.FC<LobbyProps> = ({
               );
             })}
           </div>
+
+          {/* Lobby Chat Bar */}
+          {onSendChat && (
+            <div className="mt-2 pt-2 border-t border-slate-800 flex flex-col space-y-1.5">
+              <div className="flex flex-wrap gap-1">
+                {['Ready! 🔥', 'Hello! 👋', 'Let\'s play! 🃏', 'Good luck! 🍀'].map((qc) => (
+                  <button
+                    key={qc}
+                    type="button"
+                    onClick={() => onSendChat(qc)}
+                    className="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2 py-0.5 rounded-lg border border-slate-700 transition active:scale-95 cursor-pointer"
+                  >
+                    {qc}
+                  </button>
+                ))}
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (lobbyChatText.trim()) {
+                    onSendChat(lobbyChatText.trim());
+                    setLobbyChatText('');
+                  }
+                }}
+                className="flex items-center space-x-1.5"
+              >
+                <input
+                  type="text"
+                  maxLength={60}
+                  placeholder="Say something in lobby..."
+                  value={lobbyChatText}
+                  onChange={(e) => setLobbyChatText(e.target.value)}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!lobbyChatText.trim()}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center space-x-1 transition cursor-pointer"
+                >
+                  <Send className="w-3 h-3" />
+                  <span>Send</span>
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Start Game Action */}
           <div className="mt-4 pt-3 border-t border-slate-800">

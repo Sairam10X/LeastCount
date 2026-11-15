@@ -8,6 +8,7 @@ interface OpponentViewProps {
   isCurrentTurn: boolean;
   isDealer: boolean;
   turnTimeRemaining: number | null;
+  chatMessage?: string;
 }
 
 export const OpponentView: React.FC<OpponentViewProps> = ({
@@ -15,6 +16,7 @@ export const OpponentView: React.FC<OpponentViewProps> = ({
   isCurrentTurn,
   isDealer,
   turnTimeRemaining,
+  chatMessage,
 }) => {
   return (
     <div
@@ -24,6 +26,13 @@ export const OpponentView: React.FC<OpponentViewProps> = ({
           : 'bg-slate-900/60 border border-slate-700/60'
       } ${player.isEliminated ? 'opacity-40 grayscale' : ''}`}
     >
+      {/* Speech / Message Bubble */}
+      {chatMessage && (
+        <div className="absolute -top-12 z-40 max-w-[190px] bg-white text-slate-950 font-bold text-xs px-3 py-1.5 rounded-2xl shadow-2xl border-2 border-indigo-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none">
+          <div className="truncate text-center">{chatMessage}</div>
+          <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-white"></div>
+        </div>
+      )}
       {/* Dealer & Host Badges */}
       <div className="absolute -top-2.5 left-2 flex items-center space-x-1">
         {player.isHost && (

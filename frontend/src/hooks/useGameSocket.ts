@@ -20,6 +20,13 @@ export interface ToastMessage {
   timestamp: number;
 }
 
+export interface ChatBubble {
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+}
+
 export function useGameSocket(roomCode: string | null) {
   const [gameState, setGameState] = useState<PersonalizedGameState | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -27,6 +34,7 @@ export function useGameSocket(roomCode: string | null) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const [chatBubbles, setChatBubbles] = useState<Record<string, ChatBubble>>({});
 
   const socketRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<number | null>(null);
@@ -131,6 +139,27 @@ export function useGameSocket(roomCode: string | null) {
           addToast(msg.message, 'error');
         } else if (msg.type === 'toast') {
           addToast(msg.message, msg.variant || 'info');
+        } else if (msg.type === 'chat_bubble') {
+          setChatBubbles((prev) => ({
+            ...prev,
+            [msg.playerId]: {
+              playerId: msg.playerId,
+              playerName: msg.playerName,
+              message: msg.message,
+              timestamp: msg.timestamp,
+            },
+          }));
+          const removeTime = msg.timestamp;
+          window.setTimeout(() => {
+            setChatBubbles((prev) => {
+              if (prev[msg.playerId]?.timestamp === removeTime) {
+                const next = { ...prev };
+                delete next[msg.playerId];
+                return next;
+              }
+              return prev;
+            });
+          }, 4500);
         }
       } catch {}
     };
@@ -249,12 +278,21 @@ export function useGameSocket(roomCode: string | null) {
     send({ type: 'claim_host' });
   }, [send]);
 
+  const sendChat = useCallback(
+    (message: string) => {
+      if (!message || !message.trim()) return;
+      send({ type: 'chat', message: message.trim() });
+    },
+    [send]
+  );
+
   return {
     gameState,
     isConnected,
     isConnecting,
     errorMessage,
     toasts,
+    chatBubbles,
     myPlayerId,
     join,
     updateSettings,
@@ -267,6 +305,7 @@ export function useGameSocket(roomCode: string | null) {
     drawCard,
     callShow,
     quickMatchDiscard,
+    sendChat,
     reconnect: connect,
   };
 }

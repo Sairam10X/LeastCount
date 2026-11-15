@@ -108,7 +108,7 @@ export interface ActivityLogEntry {
   id: string;
   timestamp: number;
   text: string;
-  type?: 'action' | 'show' | 'system' | 'timer';
+  type?: 'action' | 'show' | 'system' | 'timer' | 'chat';
 }
 
 export interface LastDiscard {
@@ -183,6 +183,7 @@ export type ClientMessage =
   | { type: 'show'; seq: number }
   | { type: 'claim_host' }
   | { type: 'quick_match_discard'; cardIds: string[]; seq: number }
+  | { type: 'chat'; message: string }
   | { type: 'ping' };
 
 // Server -> Client Messages
@@ -191,5 +192,6 @@ export type ServerMessage =
   | { type: 'joined'; playerId: string; sessionToken: string; roomCode: string }
   | { type: 'error'; message: string; code?: string }
   | { type: 'toast'; message: string; variant?: 'info' | 'success' | 'warning' | 'error' }
+  | { type: 'chat_bubble'; playerId: string; playerName: string; message: string; timestamp: number }
   | { type: 'pong' };
 

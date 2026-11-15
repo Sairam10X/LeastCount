@@ -73,6 +73,8 @@ export function App() {
     drawCard,
     callShow,
     quickMatchDiscard,
+    chatBubbles,
+    sendChat,
   } = useGameSocket(roomCode);
 
   // Synchronize URL when roomCode changes
@@ -406,6 +408,8 @@ export function App() {
             settings={gameState.settings}
             isHost={gameState.isHost}
             myPlayerId={gameState.myId}
+            chatBubbles={chatBubbles}
+            onSendChat={sendChat}
             onUpdateSettings={updateSettings}
             onClaimHost={claimHost}
             onStartGame={startGame}
@@ -427,6 +431,7 @@ export function App() {
                       ? gameState.turnTimeRemaining
                       : null
                   }
+                  chatMessage={chatBubbles[opp.id]?.message}
                 />
               ))}
             </div>
@@ -464,6 +469,8 @@ export function App() {
                 canDiscard={gameState.canDiscard}
                 discardTop={gameState.discardTop}
                 selectedCardIds={selectedCardIds}
+                chatMessage={chatBubbles[gameState.myId]?.message}
+                onSendChat={sendChat}
                 onToggleSelectCard={handleToggleSelectCard}
                 onDiscard={handleDiscard}
                 onShow={handleShow}
