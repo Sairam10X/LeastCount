@@ -96,11 +96,11 @@ describe('Show Resolution & Scoring Penalties', () => {
 
     expect(result.isSuccessfulShow).toBe(false);
 
-    // Alice is penalized: hand total (8) + penalty (40) = 48
+    // Alice is penalized: fixed penalty (40) only irrespective of hand sum
     const aliceRes = result.playerResults.find((p) => p.playerId === 'p1');
     expect(aliceRes?.penaltyAdded).toBe(40);
-    expect(aliceRes?.roundScore).toBe(48);
-    expect(aliceRes?.totalScore).toBe(48);
+    expect(aliceRes?.roundScore).toBe(40);
+    expect(aliceRes?.totalScore).toBe(40);
     expect(aliceRes?.isWinner).toBe(false);
 
     // Bob (lowest opponent) scores 0
@@ -137,7 +137,7 @@ describe('Show Resolution & Scoring Penalties', () => {
     expect(result.isSuccessfulShow).toBe(false);
 
     const aliceRes = result.playerResults.find((p) => p.playerId === 'p1');
-    expect(aliceRes?.roundScore).toBe(45); // 5 + 40
+    expect(aliceRes?.roundScore).toBe(40); // fixed penalty 40 only
 
     const bobRes = result.playerResults.find((p) => p.playerId === 'p2');
     expect(bobRes?.roundScore).toBe(0); // Bob is lowest

@@ -106,7 +106,7 @@ export const HowToPlayModal: React.FC<HowToPlayModalProps> = ({
               <li>
                 <strong>Wrong Show:</strong> If any other player has a total equal to or lower
                 than yours, you get penalized with{' '}
-                <strong>+{settings.wrongShowPenalty} penalty points</strong> plus your hand sum. The
+                <strong>+{settings.wrongShowPenalty} penalty points</strong> (irrespective of hand sum). The
                 lowest player scores 0!
               </li>
             </ul>

@@ -179,6 +179,11 @@ export function App() {
     return gameState.players.filter((p) => p.id !== gameState.myId);
   }, [gameState]);
 
+  const myPlayer = useMemo(() => {
+    if (!gameState) return null;
+    return gameState.players.find((p) => p.id === gameState.myId) || null;
+  }, [gameState]);
+
   const currentTurnPlayer = useMemo(() => {
     if (!gameState || !gameState.currentTurnPlayerId) return null;
     return gameState.players.find((p) => p.id === gameState.currentTurnPlayerId);
@@ -203,6 +208,19 @@ export function App() {
             <span className="ml-2 font-mono font-bold text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded border border-slate-700">
               {roomCode}
             </span>
+          )}
+          {gameState && gameState.status === 'playing' && (
+            <div className="ml-2 flex items-center space-x-1.5 text-xs">
+              <span className="hidden sm:inline bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                R{gameState.roundNumber}
+              </span>
+              <span className="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/40">
+                Your Score: {myPlayer?.score ?? 0}
+                {!gameState.settings.singleRoundMode && (
+                  <span className="text-amber-400/80 font-normal ml-0.5">/ {gameState.settings.gameTargetScore}</span>
+                )}
+              </span>
+            </div>
           )}
         </div>
 
@@ -437,6 +455,9 @@ export function App() {
                 hand={gameState.myHand}
                 settings={gameState.settings}
                 handTotal={gameState.myHandTotal}
+                myScore={myPlayer?.score ?? 0}
+                playerName={myPlayer?.name ?? playerName}
+                isHost={gameState.isHost}
                 isMyTurn={gameState.isMyTurn}
                 turnPhase={gameState.turnPhase}
                 canShow={gameState.canShow}

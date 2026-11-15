@@ -68,7 +68,7 @@ export interface PlayerForScoring {
  *     caller adds 0
  *     everyone else adds their hand total
  * - If any other player has a total <= caller:
- *     caller is penalized (wrongShowPenalty + hand total)
+ *     caller is penalized with wrongShowPenalty (fixed penalty points only, irrespective of hand sum)
  *     the lowest player scores 0 (if tie for lowest among non-callers, both/all get 0)
  *     others add their hand total
  */
@@ -126,10 +126,10 @@ export function resolveShow(
         penaltyAdded = 0;
       }
     } else {
-      // Wrong show!
+      // Wrong show! Adds only the penalty points irrespective of sum in hand
       if (item.isCaller) {
         penaltyAdded = settings.wrongShowPenalty;
-        roundScore = item.total + settings.wrongShowPenalty;
+        roundScore = settings.wrongShowPenalty;
         isWinner = false;
       } else if (item.total === lowestTotalOverall) {
         // Lowest non-caller scores 0

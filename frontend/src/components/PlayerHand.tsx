@@ -7,6 +7,9 @@ interface PlayerHandProps {
   hand: CardType[];
   settings: GameSettings;
   handTotal: number;
+  myScore?: number;
+  playerName?: string;
+  isHost?: boolean;
   isMyTurn: boolean;
   turnPhase: TurnPhase;
   canShow: boolean;
@@ -23,6 +26,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
   hand,
   settings,
   handTotal,
+  myScore = 0,
+  playerName,
+  isHost = false,
   isMyTurn,
   turnPhase,
   canShow,
@@ -73,12 +79,26 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
     <div className="w-full flex flex-col items-center pb-2 pt-1 select-none">
       {/* Hand Controls Bar */}
       <div className="w-full max-w-xl px-4 flex flex-wrap items-center justify-between gap-2 mb-2">
-        {/* Hand Total Pill */}
+        {/* Badges: Self Score & Current Hand Total */}
         <div className="flex items-center space-x-2">
+          {/* Cumulative Match Score */}
+          <div
+            className="flex items-center space-x-1.5 px-3 py-1 rounded-full border border-amber-500/50 bg-amber-500/15 text-amber-300 text-xs sm:text-sm font-bold shadow"
+            title="Your cumulative match score (reaching target score eliminates you)"
+          >
+            <span>Pts:</span>
+            <span className="font-mono text-base text-white">{myScore}</span>
+            <span className="text-[10px] text-amber-400/80 font-normal">
+              {settings.singleRoundMode ? '' : `/ ${settings.gameTargetScore}`}
+            </span>
+          </div>
+
+          {/* Current Hand Total */}
           <div
             className={`flex items-center space-x-1 px-3 py-1 rounded-full border text-xs sm:text-sm font-bold shadow ${totalColor}`}
+            title="Sum of cards currently in your hand"
           >
-            <span>Total:</span>
+            <span>Hand:</span>
             <span className="font-mono text-base">{handTotal}</span>
             <span className="text-[10px] opacity-75 font-normal">
               ({hasShowLimit ? `Limit: ≤ ${settings.showLimit}` : 'No Limit'})
