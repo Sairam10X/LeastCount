@@ -84,26 +84,26 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
       : 'bg-red-500/20 text-red-300 border-red-500/40';
 
   return (
-    <div className="w-full flex flex-col items-center pb-2 pt-1 select-none relative">
+    <div className="w-full flex flex-col items-center pb-1 pt-0 select-none relative flex-shrink-0">
       {/* Real-time Message Bubble for Self - Displayed inwards towards the table (above player hand) */}
       {chatMessage && (
-        <div className="absolute -top-12 z-50 max-w-[220px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none whitespace-normal text-center leading-snug">
+        <div className="absolute -top-11 z-50 max-w-[220px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1 rounded-2xl shadow-2xl border-2 border-emerald-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none whitespace-normal text-center leading-tight">
           <div>{chatMessage}</div>
           <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-white"></div>
         </div>
       )}
 
       {/* Hand Controls Bar */}
-      <div className="w-full max-w-xl px-4 flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div className="w-full max-w-xl px-2 sm:px-4 flex items-center justify-between gap-1.5 mb-1 flex-shrink-0">
         {/* Badges: Self Score & Current Hand Total */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5">
           {/* Cumulative Match Score */}
           <div
-            className="flex items-center space-x-1.5 px-3 py-1 rounded-full border border-amber-500/50 bg-amber-500/15 text-amber-300 text-xs sm:text-sm font-bold shadow"
+            className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full border border-amber-500/50 bg-amber-500/15 text-amber-300 text-xs font-bold shadow"
             title="Your cumulative match score (reaching target score eliminates you)"
           >
             <span>Pts:</span>
-            <span className="font-mono text-base text-white">{myScore}</span>
+            <span className="font-mono text-sm text-white">{myScore}</span>
             <span className="text-[10px] text-amber-400/80 font-normal">
               {settings.singleRoundMode ? '' : `/ ${settings.gameTargetScore}`}
             </span>
@@ -111,19 +111,19 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
 
           {/* Current Hand Total */}
           <div
-            className={`flex items-center space-x-1 px-3 py-1 rounded-full border text-xs sm:text-sm font-bold shadow ${totalColor}`}
+            className={`flex items-center space-x-1 px-2.5 py-0.5 rounded-full border text-xs font-bold shadow ${totalColor}`}
             title="Sum of cards currently in your hand"
           >
             <span>Hand:</span>
-            <span className="font-mono text-base">{handTotal}</span>
+            <span className="font-mono text-sm">{handTotal}</span>
             <span className="text-[10px] opacity-75 font-normal">
-              ({hasShowLimit ? `Limit: ≤ ${settings.showLimit}` : 'No Limit'})
+              ({hasShowLimit ? `≤${settings.showLimit}` : 'No Limit'})
             </span>
           </div>
 
           {selectionValidation.valid && selectedCardIds.length > 1 && (
-            <span className="text-[11px] bg-slate-800 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-slate-700">
-              Set of {selectionValidation.count} × {selectionValidation.rank}
+            <span className="hidden sm:inline text-[11px] bg-slate-800 text-emerald-400 font-semibold px-2 py-0.5 rounded border border-slate-700">
+              Set {selectionValidation.count}×{selectionValidation.rank}
             </span>
           )}
         </div>
@@ -281,9 +281,9 @@ export const PlayerHand: React.FC<PlayerHandProps> = ({
         </div>
       )}
 
-      {/* Interactive Fanned Hand */}
-      <div className="relative w-full max-w-2xl px-2 flex items-center justify-center min-h-[120px] sm:min-h-[140px] overflow-x-auto py-2">
-        <div className="flex items-center -space-x-4 sm:-space-x-6 hover:space-x-1 transition-all duration-200">
+      {/* Interactive Fanned Hand - Fully visible without scrolling */}
+      <div className="relative w-full max-w-xl px-1 flex items-center justify-center pt-0.5 pb-0 overflow-visible flex-shrink-0">
+        <div className="flex items-center -space-x-4 sm:-space-x-5 hover:space-x-1 transition-all duration-200">
           {hand.map((card, idx) => {
             const isSelected = selectedCardIds.includes(card.id);
             return (

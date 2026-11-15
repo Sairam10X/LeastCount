@@ -20,100 +20,72 @@ export const OpponentView: React.FC<OpponentViewProps> = ({
 }) => {
   return (
     <div
-      className={`relative flex flex-col items-center p-2 rounded-xl transition-all duration-300 ${
+      className={`relative flex items-center space-x-2 px-2.5 py-1.5 rounded-xl transition-all duration-300 flex-shrink-0 ${
         isCurrentTurn
-          ? 'bg-amber-500/15 ring-2 ring-amber-400 shadow-lg shadow-amber-500/20 scale-105'
-          : 'bg-slate-900/60 border border-slate-700/60'
+          ? 'bg-amber-500/20 ring-2 ring-amber-400 shadow-lg shadow-amber-500/25 scale-102'
+          : 'bg-slate-900/80 border border-slate-700/70 shadow'
       } ${player.isEliminated ? 'opacity-40 grayscale' : ''}`}
     >
       {/* Speech / Message Bubble - Displayed inwards towards the table (below opponent avatar) */}
       {chatMessage && (
-        <div className="absolute top-full mt-2 z-50 max-w-[200px] bg-white text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-2xl shadow-2xl border-2 border-indigo-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none whitespace-normal text-center leading-snug">
+        <div className="absolute top-full mt-1.5 left-1/2 -translate-x-1/2 z-50 max-w-[200px] bg-white text-slate-950 font-bold text-xs px-3 py-1 rounded-2xl shadow-2xl border-2 border-indigo-500 animate-in zoom-in-95 fade-in duration-200 pointer-events-none whitespace-normal text-center leading-tight">
           <div>{chatMessage}</div>
-          {/* Bubble Pointer Tail pointing UP towards the opponent */}
+          {/* Bubble Pointer Tail pointing UP towards opponent */}
           <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-b-[8px] border-b-white"></div>
         </div>
       )}
-      {/* Dealer & Host Badges */}
-      <div className="absolute -top-2.5 left-2 flex items-center space-x-1">
-        {player.isHost && (
-          <span className="flex items-center space-x-0.5 bg-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded shadow">
-            <Crown className="w-3 h-3" />
-            <span>HOST</span>
-          </span>
-        )}
-        {isDealer && (
-          <span className="bg-emerald-600 text-white font-black text-[10px] px-1.5 py-0.5 rounded shadow">
-            DEALER
-          </span>
-        )}
-      </div>
 
-      {/* Disconnected / Status Indicator */}
-      <div className="absolute -top-2.5 right-2">
-        {!player.connected ? (
-          <span className="flex items-center space-x-1 bg-red-600/90 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium animate-pulse">
-            <WifiOff className="w-2.5 h-2.5" />
-            <span>Offline</span>
-          </span>
-        ) : (
-          <span className="flex items-center space-x-1 bg-emerald-600/80 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-            <Wifi className="w-2.5 h-2.5" />
-          </span>
-        )}
-      </div>
-
-      {/* Opponent Mini Card Back Fan */}
-      <div className="h-14 w-28 relative flex items-center justify-center my-1">
+      {/* Mini Card Stack Visual with Count */}
+      <div className="relative w-7 h-9 flex-shrink-0 flex items-center justify-center">
         {player.cardCount > 0 ? (
-          Array.from({ length: Math.min(player.cardCount, 6) }).map((_, idx) => {
-            const rot = (idx - (Math.min(player.cardCount, 6) - 1) / 2) * 8;
-            const xOffset = (idx - (Math.min(player.cardCount, 6) - 1) / 2) * 10;
-            return (
-              <div
-                key={idx}
-                className="absolute"
-                style={{
-                  transform: `translateX(${xOffset}px) rotate(${rot}deg)`,
-                  transformOrigin: 'bottom center',
-                }}
-              >
-                <Card faceDown size="sm" />
-              </div>
-            );
-          })
+          <>
+            <div className="absolute -top-0.5 -left-0.5 w-6 h-8 bg-indigo-950 rounded border border-indigo-700/50 opacity-70"></div>
+            <div className="absolute top-0.5 left-0.5 w-6 h-8 bg-gradient-to-br from-indigo-900 via-blue-950 to-slate-900 rounded border border-indigo-400/80 shadow flex items-center justify-center">
+              <span className="text-[11px] font-black text-indigo-200">{player.cardCount}</span>
+            </div>
+          </>
         ) : (
-          <span className="text-xs text-slate-400 italic">No cards</span>
+          <span className="text-[10px] text-slate-500 italic">0</span>
         )}
       </div>
 
-      {/* Player Info Footer */}
-      <div className="w-full flex flex-col items-center text-center mt-1">
-        <div className="flex items-center space-x-1.5 max-w-[130px]">
-          <span className="font-semibold text-xs sm:text-sm text-slate-100 truncate">
+      {/* Player Info & Score */}
+      <div className="flex flex-col text-left min-w-[70px] max-w-[110px]">
+        <div className="flex items-center space-x-1">
+          {player.connected ? (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+          ) : (
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
+          )}
+          <span className="font-bold text-xs text-white truncate max-w-[80px]" title={player.name}>
             {player.name}
           </span>
+          {player.isHost && (
+            <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-1 rounded flex-shrink-0" title="Host">
+              H
+            </span>
+          )}
+          {isDealer && (
+            <span className="bg-emerald-600 text-white text-[9px] font-black px-1 rounded flex-shrink-0" title="Dealer">
+              D
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center space-x-2 text-[11px] text-slate-300 mt-0.5">
-          <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
-            🃏 <strong className="text-white">{player.cardCount}</strong>
+        <div className="flex items-center space-x-1.5 text-[10px] text-slate-300 mt-0.5">
+          <span className="text-slate-400">
+            Pts: <strong className="text-amber-400 font-mono text-[11px]">{player.score}</strong>
           </span>
-          <span className="bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">
-            Pts: <strong className="text-amber-400">{player.score}</strong>
-          </span>
+          {isCurrentTurn && turnTimeRemaining !== null && (
+            <span className="text-amber-300 font-mono font-bold bg-amber-950/90 px-1 rounded animate-pulse border border-amber-500/40">
+              {turnTimeRemaining}s
+            </span>
+          )}
         </div>
-
-        {/* Turn Countdown Badge */}
-        {isCurrentTurn && turnTimeRemaining !== null && (
-          <div className="mt-1 flex items-center space-x-1 text-[11px] font-mono font-bold text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-full border border-amber-500/40 animate-pulse">
-            <span>⏱️ {turnTimeRemaining}s</span>
-          </div>
-        )}
 
         {player.isEliminated && (
-          <span className="mt-1 text-[10px] font-bold text-red-400 uppercase tracking-wider bg-red-950/80 px-2 py-0.5 rounded border border-red-800">
-            Eliminated
+          <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">
+            Out
           </span>
         )}
       </div>

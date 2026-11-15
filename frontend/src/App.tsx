@@ -193,12 +193,12 @@ export function App() {
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-colors duration-300 ${
+      className={`h-[100dvh] max-h-[100dvh] w-full flex flex-col overflow-hidden transition-colors duration-300 ${
         theme === 'dark' ? 'table-felt text-slate-100' : 'table-felt-light text-slate-900'
       }`}
     >
       {/* HEADER NAVBAR */}
-      <header className="w-full px-3 py-2 sm:px-6 sm:py-3 bg-slate-950/80 backdrop-blur border-b border-slate-800/80 flex items-center justify-between z-30">
+      <header className="w-full px-2.5 py-1.5 sm:px-6 sm:py-2 bg-slate-950/80 backdrop-blur border-b border-slate-800/80 flex items-center justify-between z-30 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-white shadow-md">
             LC
@@ -309,10 +309,10 @@ export function App() {
       </div>
 
       {/* MAIN VIEW CONTENT */}
-      <main className="flex-1 flex flex-col justify-between overflow-y-auto">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {!roomCode ? (
           /* HOME SCREEN: Create / Join Game */
-          <div className="flex-1 flex items-center justify-center p-4">
+          <div className="flex-1 overflow-y-auto flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-slate-900/90 border border-slate-700/80 rounded-2xl shadow-2xl p-6 sm:p-8 backdrop-blur-md">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white font-black text-2xl shadow-xl mb-3">
@@ -402,24 +402,26 @@ export function App() {
           </div>
         ) : gameState.status === 'lobby' ? (
           /* LOBBY VIEW */
-          <Lobby
-            roomCode={gameState.roomCode}
-            players={gameState.players}
-            settings={gameState.settings}
-            isHost={gameState.isHost}
-            myPlayerId={gameState.myId}
-            chatBubbles={chatBubbles}
-            onSendChat={sendChat}
-            onUpdateSettings={updateSettings}
-            onClaimHost={claimHost}
-            onStartGame={startGame}
-            onKickPlayer={kickPlayer}
-          />
+          <div className="flex-1 overflow-y-auto">
+            <Lobby
+              roomCode={gameState.roomCode}
+              players={gameState.players}
+              settings={gameState.settings}
+              isHost={gameState.isHost}
+              myPlayerId={gameState.myId}
+              chatBubbles={chatBubbles}
+              onSendChat={sendChat}
+              onUpdateSettings={updateSettings}
+              onClaimHost={claimHost}
+              onStartGame={startGame}
+              onKickPlayer={kickPlayer}
+            />
+          </div>
         ) : (
-          /* GAMEPLAY TABLE VIEW */
-          <div className="flex-1 flex flex-col justify-between p-2 sm:p-4">
-            {/* Top & Side Opponents Grid */}
-            <div className="w-full max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-3 py-1">
+          /* GAMEPLAY TABLE VIEW (STRICTLY NO SCROLL, 100% VIEWPORT FIT) */
+          <div className="flex-1 h-full max-h-full flex flex-col justify-between p-1 sm:p-2.5 overflow-hidden min-h-0">
+            {/* Top Opponents Row - Ultra Compact & Scrollable horizontally if many opponents */}
+            <div className="w-full max-w-4xl mx-auto flex items-center justify-center gap-1.5 sm:gap-2.5 py-0.5 flex-shrink-0 overflow-x-auto no-scrollbar">
               {opponents.map((opp) => (
                 <OpponentView
                   key={opp.id}
@@ -437,45 +439,49 @@ export function App() {
             </div>
 
             {/* Central Poker Table Area (Stock & Discard) */}
-            <GameTable
-              stockCount={gameState.stockCount}
-              discardTop={gameState.discardTop}
-              lastDiscard={gameState.lastDiscard}
-              availablePickupCards={gameState.availablePickupCards}
-              turnPhase={gameState.turnPhase}
-              isMyTurn={gameState.isMyTurn}
-              currentTurnPlayerName={currentTurnPlayer?.name || 'Player'}
-              turnTimeRemaining={gameState.turnTimeRemaining}
-              quickMatchEnabled={gameState.settings.quickMatch}
-              selectedCardIds={selectedCardIds}
-              onDrawStock={handleDrawStock}
-              onDrawDiscard={handleDrawDiscard}
-              onQuickMatch={handleQuickMatch}
-              isActionDisabled={!isConnected}
-            />
-
-            {/* Bottom: Player's Own Hand & Action Buttons */}
-            {!gameState.isSpectator && (
-              <PlayerHand
-                hand={gameState.myHand}
-                settings={gameState.settings}
-                handTotal={gameState.myHandTotal}
-                myScore={myPlayer?.score ?? 0}
-                playerName={myPlayer?.name ?? playerName}
-                isHost={gameState.isHost}
-                isMyTurn={gameState.isMyTurn}
-                turnPhase={gameState.turnPhase}
-                canShow={gameState.canShow}
-                canDiscard={gameState.canDiscard}
+            <div className="flex-1 flex items-center justify-center min-h-0 my-auto">
+              <GameTable
+                stockCount={gameState.stockCount}
                 discardTop={gameState.discardTop}
+                lastDiscard={gameState.lastDiscard}
+                availablePickupCards={gameState.availablePickupCards}
+                turnPhase={gameState.turnPhase}
+                isMyTurn={gameState.isMyTurn}
+                currentTurnPlayerName={currentTurnPlayer?.name || 'Player'}
+                turnTimeRemaining={gameState.turnTimeRemaining}
+                quickMatchEnabled={gameState.settings.quickMatch}
                 selectedCardIds={selectedCardIds}
-                chatMessage={chatBubbles[gameState.myId]?.message}
-                onSendChat={sendChat}
-                onToggleSelectCard={handleToggleSelectCard}
-                onDiscard={handleDiscard}
-                onShow={handleShow}
+                onDrawStock={handleDrawStock}
+                onDrawDiscard={handleDrawDiscard}
+                onQuickMatch={handleQuickMatch}
                 isActionDisabled={!isConnected}
               />
+            </div>
+
+            {/* Bottom: Player's Own Hand & Action Buttons - Always Visible, Zero Scroll */}
+            {!gameState.isSpectator && (
+              <div className="w-full flex-shrink-0">
+                <PlayerHand
+                  hand={gameState.myHand}
+                  settings={gameState.settings}
+                  handTotal={gameState.myHandTotal}
+                  myScore={myPlayer?.score ?? 0}
+                  playerName={myPlayer?.name ?? playerName}
+                  isHost={gameState.isHost}
+                  isMyTurn={gameState.isMyTurn}
+                  turnPhase={gameState.turnPhase}
+                  canShow={gameState.canShow}
+                  canDiscard={gameState.canDiscard}
+                  discardTop={gameState.discardTop}
+                  selectedCardIds={selectedCardIds}
+                  chatMessage={chatBubbles[gameState.myId]?.message}
+                  onSendChat={sendChat}
+                  onToggleSelectCard={handleToggleSelectCard}
+                  onDiscard={handleDiscard}
+                  onShow={handleShow}
+                  isActionDisabled={!isConnected}
+                />
+              </div>
             )}
           </div>
         )}
